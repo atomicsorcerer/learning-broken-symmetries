@@ -1,3 +1,4 @@
+import numpy as np
 import polars as pl
 
 
@@ -56,13 +57,22 @@ def convert_from_lhe(file_path: str, limit: int | None = None) -> list[dict]:
 					final_state_muon_count += 1
 			
 			event = {k: v for k, v in final_state_muons}
+			
+			muon_inv_mass = np.sqrt((event["energy_0"] + event["energy_1"]) ** 2
+			                        - ((event["px_0"] + event["px_1"]) ** 2
+			                           + (event["py_0"] + event["py_1"]) ** 2
+			                           + (event["pz_0"] + event["pz_1"]) ** 2))
+			
 			event["n"] = num_of_particles
+			event["muon_inv_mass"] = muon_inv_mass
 			events.append(event)
 	
 	return events
 
 
 if __name__ == "__main__":
+	import matplotlib.pyplot as plt
+	
 	background_data = convert_from_lhe(
 		"amm_forsym_test_8263464-5_unweighted_events.lhe"
 	)
@@ -72,7 +82,12 @@ if __name__ == "__main__":
 	print("Saved background.csv")
 	
 	signal_data = convert_from_lhe("zmm_forsym_test_8263460-1_unweighted_events.lhe")
-	csv_signal_data = pl.DataFrame(background_data)
+	csv_signal_data = pl.DataFrame(signal_data)
 	csv_signal_data.write_csv("signal.csv")
 	
 	print("Saved signal.csv")
+	
+	# amalgam_inv_mass = pl.concat((csv_background_data, csv_signal_data)).get_column("muon_inv_mass").to_numpy()
+	plt.hist([csv_background_data.get_column("muon_inv_mass").to_numpy(),
+	          csv_signal_data.get_column("muon_inv_mass").to_numpy()], 100)
+	plt.show()

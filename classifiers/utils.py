@@ -28,7 +28,7 @@ def train(dataloader, model, loss_fn, optimizer) -> None:
 			print(f"loss: {loss:>5f}\t [{current:>5d}/{size:>5d}]")
 
 
-def test(dataloader, model, loss_fn) -> None:
+def test(dataloader, model, loss_fn) -> tuple[float, float]:
 	"""
 	Test a model.
 
@@ -55,3 +55,5 @@ def test(dataloader, model, loss_fn) -> None:
 	
 	print(f"Test Error: Avg loss: {test_loss:>8f}")
 	print(f"Accuracy: {correct}/{size:>0.1f} = {correct / size * 100:<0.2f}% \n")
+	
+	return test_loss, correct / size

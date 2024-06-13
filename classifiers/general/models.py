@@ -2,6 +2,41 @@ import torch
 from torch import nn
 
 
+class GeneralBinaryClassifier(nn.Module):
+	def __init__(self, input_size: int, hidden_layer_sizes: list[int], use_batch_norm: bool):
+		super().__init__()
+		
+		if len(hidden_layer_sizes) < 1:
+			raise ValueError("The number of hidden layers can not be zero.")
+		
+		stack = nn.Sequential(nn.Linear(input_size, hidden_layer_sizes[0]), nn.ReLU())
+		
+		if use_batch_norm:
+			stack.append(nn.BatchNorm1d(hidden_layer_sizes[0]))
+		
+		for i in range(len(hidden_layer_sizes)):
+			stack.append(
+				nn.Linear(hidden_layer_sizes[i],
+				          hidden_layer_sizes[i] if i == len(hidden_layer_sizes) - 1 else
+				          hidden_layer_sizes[i + 1]))
+			
+			if use_batch_norm:
+				stack.append(nn.BatchNorm1d(hidden_layer_sizes[i] if i == len(hidden_layer_sizes) - 1 else
+				                            hidden_layer_sizes[i + 1]))
+			
+			stack.append(nn.ReLU())
+		
+		if use_batch_norm:
+			stack.append(nn.BatchNorm1d(hidden_layer_sizes[-1]))
+		
+		stack.append(nn.Linear(hidden_layer_sizes[-1], 1))
+		
+		self.stack = stack
+	
+	def forward(self, x):
+		return self.stack(x)
+
+
 class ParticleFlowNetwork(nn.Module):
 	def __init__(
 			self,
