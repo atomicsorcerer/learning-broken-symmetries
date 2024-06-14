@@ -70,6 +70,33 @@ def convert_from_lhe(file_path: str, limit: int | None = None) -> list[dict]:
 	return events
 
 
+def compute_max_potential_accuracy(signal: np.array, background: np.array, bins: int):
+	"""
+	Computes the maximum potential of a binary classifier given a single feature.
+	
+	Args:
+		signal: List of integers of how many data points fall under each bucket.
+		background: List of integers of how many data points fall under each bucket.
+		bins: Number of bins to use in calculation.
+
+	Returns:
+		float: Maximum potential accuracy given the bin size and data.
+	"""
+	signal_hist, _ = np.histogram(signal, bins=bins)
+	background_hist, _ = np.histogram(background, bins=bins)
+	
+	acc = 0
+	
+	for signal_count, bg_count in zip(signal_hist, background_hist):
+		if signal_count == 0 or bg_count == 0:
+			acc += 1 / bins
+			continue
+		
+		acc += max(signal_count, bg_count) / ((signal_count + bg_count) * bins)
+	
+	return acc
+
+
 if __name__ == "__main__":
 	import matplotlib.pyplot as plt
 	
@@ -87,7 +114,13 @@ if __name__ == "__main__":
 	
 	print("Saved signal.csv")
 	
-	# amalgam_inv_mass = pl.concat((csv_background_data, csv_signal_data)).get_column("muon_inv_mass").to_numpy()
+	n_bins = 500
+	max_acc = compute_max_potential_accuracy(csv_background_data.get_column("muon_inv_mass").to_numpy(),
+	                                         csv_signal_data.get_column("muon_inv_mass").to_numpy(), n_bins)
+	
+	print(f"Approximate maximum accuracy of classifier: {(max_acc * 100):<0.2f}% (calculated with {n_bins} bins)")
+	
 	plt.hist([csv_background_data.get_column("muon_inv_mass").to_numpy(),
-	          csv_signal_data.get_column("muon_inv_mass").to_numpy()], 100)
+	          csv_signal_data.get_column("muon_inv_mass").to_numpy()], histtype="barstacked", bins=n_bins,
+	         range=(50, 250))
 	plt.show()
