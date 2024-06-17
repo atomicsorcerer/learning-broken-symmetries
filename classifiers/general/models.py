@@ -3,16 +3,18 @@ from torch import nn
 
 
 class GeneralBinaryClassifier(nn.Module):
-	def __init__(self, input_size: int, hidden_layer_sizes: list[int], use_batch_norm: bool):
+	def __init__(self, input_size: int, hidden_layer_sizes: list[int], use_batch_norm: bool = True):
 		super().__init__()
 		
 		if len(hidden_layer_sizes) < 1:
 			raise ValueError("The number of hidden layers can not be zero.")
 		
-		stack = nn.Sequential(nn.Linear(input_size, hidden_layer_sizes[0]), nn.ReLU())
+		stack = nn.Sequential(nn.Linear(input_size, hidden_layer_sizes[0]))
 		
 		if use_batch_norm:
 			stack.append(nn.BatchNorm1d(hidden_layer_sizes[0]))
+		
+		stack.append(nn.ReLU())
 		
 		for i in range(len(hidden_layer_sizes)):
 			stack.append(

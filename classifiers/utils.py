@@ -1,7 +1,7 @@
 import torch
 
 
-def train(dataloader, model, loss_fn, optimizer) -> None:
+def train(dataloader, model, loss_fn, optimizer, print_results=False) -> None:
 	"""
 	Train a model.
 
@@ -23,12 +23,12 @@ def train(dataloader, model, loss_fn, optimizer) -> None:
 		loss.backward()
 		optimizer.step()
 		
-		if batch % 100 == 0:
+		if batch % 100 == 0 and print_results:
 			loss, current = loss.item(), (batch + 1) * len(X)
 			print(f"loss: {loss:>5f}\t [{current:>5d}/{size:>5d}]")
 
 
-def test(dataloader, model, loss_fn) -> tuple[float, float]:
+def test(dataloader, model, loss_fn, print_results=False) -> tuple[float, float]:
 	"""
 	Test a model.
 
@@ -53,7 +53,8 @@ def test(dataloader, model, loss_fn) -> tuple[float, float]:
 	
 	test_loss /= num_batches
 	
-	print(f"Test Error: Avg loss: {test_loss:>8f}")
-	print(f"Accuracy: {correct}/{size:>0.1f} = {correct / size * 100:<0.2f}% \n")
+	if print_results:
+		print(f"Test Error: Avg loss: {test_loss:>8f}")
+		print(f"Accuracy: {correct}/{size:>0.1f} = {correct / size * 100:<0.2f}% \n")
 	
 	return test_loss, correct / size

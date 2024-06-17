@@ -86,15 +86,16 @@ def compute_max_potential_accuracy(signal: np.array, background: np.array, bins:
 	background_hist, _ = np.histogram(background, bins=bins)
 	
 	acc = 0
+	empty_bins = 0
 	
 	for signal_count, bg_count in zip(signal_hist, background_hist):
-		if signal_count == 0 or bg_count == 0:
-			acc += 1 / bins
+		if signal_count == 0 and bg_count == 0:
+			empty_bins += 1
 			continue
 		
-		acc += max(signal_count, bg_count) / ((signal_count + bg_count) * bins)
+		acc += max(signal_count, bg_count) / (signal_count + bg_count)
 	
-	return acc
+	return acc * (1 / (bins - empty_bins))
 
 
 if __name__ == "__main__":
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 	
 	print("Saved signal.csv")
 	
-	n_bins = 500
+	n_bins = 6000
 	max_acc = compute_max_potential_accuracy(csv_background_data.get_column("muon_inv_mass").to_numpy(),
 	                                         csv_signal_data.get_column("muon_inv_mass").to_numpy(), n_bins)
 	
