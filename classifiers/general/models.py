@@ -70,6 +70,7 @@ class ParticleFlowNetwork(nn.Module):
 			raise ValueError("Length of classifier_hidden_layer_dimensions cannot be zero.")
 		
 		stack = nn.Sequential(nn.Linear(latent_space_dim, classifier_hidden_layer_dimensions[0]),
+		                      nn.BatchNorm1d(classifier_hidden_layer_dimensions[0]),
 		                      nn.ReLU())
 		
 		for i in range(len(classifier_hidden_layer_dimensions)):
@@ -77,6 +78,9 @@ class ParticleFlowNetwork(nn.Module):
 				nn.Linear(classifier_hidden_layer_dimensions[i],
 				          classifier_hidden_layer_dimensions[i] if i == len(classifier_hidden_layer_dimensions) - 1 else
 				          classifier_hidden_layer_dimensions[i + 1]))
+			stack.append(nn.BatchNorm1d(
+				classifier_hidden_layer_dimensions[i] if i == len(classifier_hidden_layer_dimensions) - 1 else
+				classifier_hidden_layer_dimensions[i + 1]))
 			stack.append(nn.ReLU())
 		
 		stack.append(nn.Linear(classifier_hidden_layer_dimensions[-1], 1))
@@ -106,13 +110,6 @@ class ParticleMapping(nn.Module):
 		"""
 		Maps each set of observables of a particle to a specific dimensional output and sums them together.
 
-		>>> particle_map = ParticleMapping(4, 8, 8, hidden_layer_dimensions=[100, 50])
-		>>> X = torch.Tensor([[[1, 2, 3, 4], [float("nan"), float("nan"), float("nan"), float("nan")]]])
-		>>> X2 = torch.Tensor([[[5, 6, 7, 8], [float("nan"), float("nan"), float("nan"), float("nan")]]])
-		>>> X3 = torch.Tensor([[[1, 2, 3, 4], [5, 6, 7, 8]]])
-		>>> particle_map.forward(X) + particle_map.forward(X2) == particle_map.forward(X3)
-		tensor([[True, True, True, True, True, True, True, True]])
-
 		Args:
 			input_size: The number of data points each particle has.
 			output_dimension: The fixed number of output nodes.
@@ -141,7 +138,8 @@ class ParticleMapping(nn.Module):
 				f"Each particle must have the same number of observables, which must be equal to the input size. "
 				f"Total_features % input_size must be zero.")
 		
-		stack = nn.Sequential(nn.Linear(input_size, hidden_layer_dimensions[0] or output_dimension), nn.ReLU())
+		stack = nn.Sequential(nn.Linear(input_size, hidden_layer_dimensions[0]),
+		                      nn.BatchNorm1d(total_features // input_size), nn.ReLU())
 		
 		for i in range(len(hidden_layer_dimensions)):
 			stack.append(
@@ -149,6 +147,7 @@ class ParticleMapping(nn.Module):
 				          hidden_layer_dimensions[i] if i == len(hidden_layer_dimensions) - 1 else
 				          hidden_layer_dimensions[
 					          i + 1]))
+			stack.append(nn.BatchNorm1d(total_features // input_size))
 			stack.append(nn.ReLU())
 		
 		stack.append(nn.Linear(hidden_layer_dimensions[-1], output_dimension))

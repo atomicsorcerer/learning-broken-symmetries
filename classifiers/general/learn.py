@@ -3,13 +3,20 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader, random_split
 
 from classifiers.utils import train, test
-from models import GeneralBinaryClassifier
+from models import ParticleFlowNetwork
 from data.event_dataset import EventDataset
 
-data = EventDataset("../../data/background.csv", "../../data/signal.csv",
-                    ["muon_inv_mass"], features_shape=(-1, 1), limit=20_000)
+feature_cols = [
+	"px_0", "py_0", "pz_0", "energy_0",
+	"px_1", "py_1", "pz_1", "energy_1",
+]
+data = EventDataset("../../data/background.csv",
+                    "../../data/signal.csv",
+                    feature_cols,
+                    features_shape=(-1, 2, 4),
+                    limit=20_000)
 
-test_percent = 0.10
+test_percent = 0.30
 training_data, test_data = random_split(data, [1 - test_percent, test_percent])
 
 batch_size = 128
@@ -17,14 +24,19 @@ batch_size = 128
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-model = GeneralBinaryClassifier(1, [512, 256, 128], True)
+model = ParticleFlowNetwork(4,
+                            8,
+                            16,
+                            [512, 256, 128],
+                            [128, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 
-epochs = 50
+epochs = 30
 loss_over_time = []
 max_acc = 0.0
+max_acc_epoch = 0
 for t in range(epochs):
 	print(f"Epoch {t + 1}\n-------------------------------")
 	train(train_dataloader, model, loss_function, optimizer, True)
@@ -35,9 +47,10 @@ for t in range(epochs):
 	if acc > max_acc:
 		torch.save(model, "model.pth")
 		max_acc = acc
+		max_acc_epoch = t + 1
 
 plt.plot(loss_over_time)
 plt.show()
 
 print("Finished Training")
-print(f"Model saved had {max_acc * 100:<0.2f}% accuracy")
+print(f"Model saved had {max_acc * 100:<0.2f}% accuracy, and was from epoch {max_acc_epoch}.")

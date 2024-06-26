@@ -3,13 +3,14 @@ import torch
 
 def train(dataloader, model, loss_fn, optimizer, print_results=False) -> None:
 	"""
-	Train a model.
+	Train a binary classification model.
 
 	Args:
 		dataloader: Data to be used in training.
 		model: Model to be trained.
 		loss_fn: Loss function to be used.
 		optimizer: Optimizer to be used.
+		print_results: Whether to print logs during training.
 	"""
 	size = len(dataloader.dataset)
 	model.train()
@@ -30,12 +31,13 @@ def train(dataloader, model, loss_fn, optimizer, print_results=False) -> None:
 
 def test(dataloader, model, loss_fn, print_results=False) -> tuple[float, float]:
 	"""
-	Test a model.
+	Test a binary classification model.
 
 	Args:
 		dataloader: Data to be used in training.
 		model: Model to be trained.
 		loss_fn: Loss function to be used.
+		print_results: Whether to print logs during training.
 	"""
 	size = len(dataloader.dataset)
 	num_batches = len(dataloader)

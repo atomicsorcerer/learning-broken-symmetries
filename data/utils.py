@@ -115,7 +115,7 @@ if __name__ == "__main__":
 	
 	print("Saved signal.csv")
 	
-	n_bins = 6000
+	n_bins = 3000
 	max_acc = compute_max_potential_accuracy(csv_background_data.get_column("muon_inv_mass").to_numpy(),
 	                                         csv_signal_data.get_column("muon_inv_mass").to_numpy(), n_bins)
 	
