@@ -153,7 +153,7 @@ class ParticleMapping(nn.Module):
 		stack.append(nn.Linear(hidden_layer_dimensions[-1], output_dimension))
 		
 		self.stack = stack
-		self.avg_pool_2d = torch.nn.AvgPool2d((total_features // input_size, 1))
+		self.avg_pool_2d = nn.AvgPool2d((total_features // input_size, 1))
 	
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		"""

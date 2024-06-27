@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader, random_split
 
 from classifiers.utils import train, test
-from models import ParticleFlowNetwork
+from models import WeightedHybridClassifier
 from data.event_dataset import EventDataset
 
 feature_cols = [
@@ -24,16 +24,16 @@ batch_size = 128
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-model = ParticleFlowNetwork(4,
-                            8,
-                            16,
-                            [512, 256, 128],
-                            [128, 128])
+model = WeightedHybridClassifier(0.5,
+                                 16,
+                                 [128, 128],
+                                 [512, 256, 128],
+                                 [512, 512, 256, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.00001)
 
-epochs = 50
+epochs = 20
 loss_over_time = []
 accuracy_over_time = []
 max_acc = 0.0
@@ -54,7 +54,7 @@ for t in range(epochs):
 plt.plot(accuracy_over_time[0:max_acc_epoch])
 plt.xlabel("Epoch")
 plt.ylabel("Accuracy")
-plt.title("PFN Classifier Accuracy per Epoch")
+plt.title("Weighted Hybrid Classifier Accuracy per Epoch")
 plt.show()
 
 print("Finished Training")

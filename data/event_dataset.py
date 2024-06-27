@@ -24,7 +24,7 @@ class EventDataset(Dataset):
 			shuffle_seed: Optional shuffle seed for reproducibility.
 		"""
 		if feature_cols is None:
-			included_cols = ["px_0", "py_0", "pz_0", "energy_0", "px_1", "py_1", "pz_1", "energy_1"]
+			feature_cols = ["px_0", "py_0", "pz_0", "energy_0", "px_1", "py_1", "pz_1", "energy_1"]
 		if shuffle_seed is None:
 			shuffle_seed = np.random.randint(0, 100)
 		

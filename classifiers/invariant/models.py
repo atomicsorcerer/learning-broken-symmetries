@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 
-class LorenzInvariantParticleMapping(nn.Module):
+class LorenzInvariantNetwork(nn.Module):
 	def __init__(self, output_dimension: int, hidden_layer_dimensions=None) -> None:
 		"""
 		Maps each set of observables of a particle to a specific dimensional output using Lorenz-invariant functions.
@@ -46,7 +46,10 @@ class LorenzInvariantParticleMapping(nn.Module):
 	
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		"""
-		Forward implementation for ParticleMapping.
+		Forward implementation for the LorenzInvariantParticleMapping.
+		
+		Computes the Minkowski inner product and Minkowski squared norm, since both are two Lorenz-invariant terms,
+		which are then used as input to the mapping network.
 
 		Args:
 			x: Input tensor(s).
