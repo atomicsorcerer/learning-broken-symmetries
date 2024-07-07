@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader, random_split
 
 from classifiers.utils import train, test
-from models import WeightedHybridClassifier, LearnedWeightHybridClassifier
+from models import *
 from data.event_dataset import EventDataset
 
 feature_cols = [
@@ -19,16 +19,16 @@ data = EventDataset("../../data/background.csv",
 test_percent = 0.15
 training_data, test_data = random_split(data, [1 - test_percent, test_percent])
 
-batch_size = 64
+batch_size = 128
 
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-model = LearnedWeightHybridClassifier(16,
-                                      [128, 128],
-                                      [512, 256, 128],
-                                      [512, 256, 128],
-                                      [128, 128])
+model = LatentSpacePooledHybridClassifier(8,
+                                          [128, 128],
+                                          [128, 128],
+                                          [128, 128],
+                                          [512, 256, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
