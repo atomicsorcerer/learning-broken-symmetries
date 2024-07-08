@@ -6,7 +6,7 @@ from torch.utils.data import random_split
 from itertools import combinations_with_replacement
 
 from data import EventDataset
-from models import LatentSpacePooledHybridClassifier
+from models import LorenzInvariantNetwork
 
 feature_cols = [
 	"px_0", "py_0", "pz_0", "energy_0",
@@ -31,10 +31,11 @@ X = torch.Tensor(X)
 Y = torch.Tensor(Y)
 
 model = NeuralNetBinaryClassifier(
-	module=LatentSpacePooledHybridClassifier,
+	module=LorenzInvariantNetwork,
 	criterion=nn.BCEWithLogitsLoss,
 	optimizer=optim.AdamW,
-	max_epochs=15
+	max_epochs=15,
+	module__output_dimension=1
 )
 
 param_grid = {
@@ -42,19 +43,7 @@ param_grid = {
 	"optimizer__lr": [10 ** (-i) for i in range(-2, 11)],
 	"optimizer__weight_decay": [1e-1, 1e-2, 1e-3, 1e-4],
 	"module__latent_space_dim": [2 ** i for i in range(9)],
-	"module__pfn_mapping_hidden_layer_dimensions": [
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 2)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 3))
-	],
-	"module__lorenz_invariant_hidden_layer_dimensions": [
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 2)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 3))
-	],
-	"module__weight_network_hidden_layer_dimensions": [
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 2)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 3))
-	],
-	"module__classifier_hidden_layer_dimensions": [
+	"module__hidden_layer_dimensions": [
 		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 2)),
 		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 3)),
 		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 4)),

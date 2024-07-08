@@ -40,23 +40,19 @@ model = NeuralNetBinaryClassifier(
 
 param_grid = {
 	"batch_size": [8, 16, 32, 64, 128],
-	"module__classifier_hidden_layer_dimensions": [
-		[128, 128, 128],
-		[256, 256, 256],
-		[256, 256, 128],
-		[256, 128, 128],
-		[512, 256, 128],
-		[512, 512, 512],
-	],
+	"optimizer__lr": [10 ** (-i) for i in range(-2, 11)],
+	"optimizer__weight_decay": [1e-1, 1e-2, 1e-3, 1e-4],
+	"module__latent_space_dim": [2 ** i for i in range(9)],
 	"module__mapping_hidden_layer_dimensions": [
-		[256, 256, 256],
-		[256, 256, 128],
-		[128, 128, 128],
-		[256, 128, 128],
-		[512, 256, 128],
+		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 2)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(2, 10)], 3))
 	],
-	"module__latent_space_dim": [2 ** i for i in range(8)],
-	"optimizer__lr": [10 ** (-i) for i in range(8)]
+	"module__classifier_hidden_layer_dimensions": [
+		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 2)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 3)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 4)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 5)),
+	]
 }
 grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=3)
 grid_result = grid.fit(X, Y)
