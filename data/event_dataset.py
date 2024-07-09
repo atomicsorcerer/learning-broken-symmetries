@@ -12,7 +12,9 @@ class EventDataset(Dataset):
 			feature_cols: list[str],
 			features_shape: tuple,
 			limit: int = 10_000,
-			shuffle_seed=None,
+			shuffle_seed: int | None = None,
+			blur_data: bool = False,
+			blur_size: float = 0.1
 	) -> None:
 		"""
 		Initializes an EventDataset for given CSV files of signal and background.
@@ -48,6 +50,9 @@ class EventDataset(Dataset):
 		features = torch.Tensor(features)
 		
 		self.features = features
+		self.features_shape = features_shape
+		self.blur_data = blur_data
+		self.blur_size = blur_size
 	
 	def __len__(self) -> int:
 		"""
@@ -68,4 +73,14 @@ class EventDataset(Dataset):
 		Returns:
 			tuple: Feature and label at the index (feature, label)
 		"""
-		return self.features[idx], torch.unsqueeze(self.labels[idx], 0)
+		features = self.features[idx]
+		print(features)
+		
+		if self.blur_data:
+			pT = np.sqrt(features[0][0] ** 2 + features[0][1] ** 2)
+			blur = np.random.normal(0, self.blur_size * pT, len(features.reshape((-1))))
+			blur = blur.reshape(self.features_shape[1:])
+			blur = torch.from_numpy(blur)
+			features = torch.add(features, blur)
+		
+		return features, torch.unsqueeze(self.labels[idx], 0)
