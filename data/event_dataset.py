@@ -47,7 +47,7 @@ class EventDataset(Dataset):
 		self.labels = torch.Tensor(labels)
 		
 		features = amalgam_dataset.drop("label").to_numpy().reshape(features_shape).tolist()
-		features = torch.Tensor(features)
+		features = torch.Tensor(features).type(torch.float32)
 		
 		self.features = features
 		self.features_shape = features_shape
@@ -74,13 +74,12 @@ class EventDataset(Dataset):
 			tuple: Feature and label at the index (feature, label)
 		"""
 		features = self.features[idx]
-		print(features)
 		
 		if self.blur_data:
 			pT = np.sqrt(features[0][0] ** 2 + features[0][1] ** 2)
 			blur = np.random.normal(0, self.blur_size * pT, len(features.reshape((-1))))
 			blur = blur.reshape(self.features_shape[1:])
 			blur = torch.from_numpy(blur)
-			features = torch.add(features, blur)
+			features = torch.add(features, blur).type(torch.float32)
 		
 		return features, torch.unsqueeze(self.labels[idx], 0)

@@ -14,9 +14,11 @@ data = EventDataset("../../data/background.csv",
                     "../../data/signal.csv",
                     feature_cols,
                     features_shape=(-1, 2, 4),
-                    limit=20_000)
+                    limit=20_000,
+                    blur_data=True,
+                    blur_size=0.1)
 
-test_percent = 0.30
+test_percent = 0.20
 training_data, test_data = random_split(data, [1 - test_percent, test_percent])
 
 batch_size = 128

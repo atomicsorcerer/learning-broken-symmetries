@@ -14,9 +14,11 @@ data = EventDataset("../../data/background.csv",
                     "../../data/signal.csv",
                     feature_cols,
                     features_shape=(-1, 2, 4),
-                    limit=20_000)
+                    limit=20_000,
+                    blur_data=True,
+                    blur_size=0.1)
 
-test_percent = 0.30
+test_percent = 0.20
 training_data, test_data = random_split(data, [1 - test_percent, test_percent])
 
 batch_size = 128
@@ -24,10 +26,10 @@ batch_size = 128
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
-model = LorenzInvariantNetwork(1, [512, 512, 256, 128])
+model = LorenzInvariantNetwork(1, [512, 256, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.00001)
 
 epochs = 50
 loss_over_time = []

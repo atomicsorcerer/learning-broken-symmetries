@@ -200,9 +200,9 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 		invariant_result = self.invariant_p_map(x)
 		combined_result = torch.stack((general_result, invariant_result), dim=1)
 		
-		conv_weights = self.weight_network(x).reshape(-1, 2, 1)
+		pool_weights = self.weight_network(x).reshape(-1, 2, 1)
 		
-		combined_result = torch.mul(combined_result, conv_weights)
+		combined_result = torch.mul(combined_result, pool_weights)
 		combined_result = self.sum_pool_2d(combined_result)
 		combined_result = self.stack(combined_result)
 		
