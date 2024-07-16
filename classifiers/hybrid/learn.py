@@ -16,7 +16,7 @@ data = EventDataset("../../data/background.csv",
                     features_shape=(-1, 2, 4),
                     limit=20_000,
                     blur_data=True,
-                    blur_size=0.1)
+                    blur_size=0.05)
 
 test_percent = 0.20
 training_data, test_data = random_split(data, [1 - test_percent, test_percent])
@@ -29,13 +29,13 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 model = LatentSpacePooledHybridClassifier(16,
                                           [128, 128],
                                           [128, 128],
-                                          [128, 128],
+                                          [64, 64, 64],
                                           [512, 256, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.00001, weight_decay=1e-3)
 
-epochs = 50
+epochs = 20
 loss_over_time = []
 accuracy_over_time = []
 max_acc = 0.0

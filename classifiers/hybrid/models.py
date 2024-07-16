@@ -156,8 +156,7 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 		if len(weight_network_hidden_layer_dimensions) == 0:
 			raise ValueError("Length of weight_network_hidden_layer_dimensions cannot be zero.")
 		
-		weight_network = nn.Sequential(ParticleMapping(4, 8, latent_space_dim, pfn_mapping_hidden_layer_dimensions),
-		                               nn.Linear(latent_space_dim, weight_network_hidden_layer_dimensions[0]),
+		weight_network = nn.Sequential(nn.Linear(1, weight_network_hidden_layer_dimensions[0]),
 		                               nn.BatchNorm1d(weight_network_hidden_layer_dimensions[0]),
 		                               nn.ReLU())
 		
@@ -200,7 +199,8 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 		invariant_result = self.invariant_p_map(x)
 		combined_result = torch.stack((general_result, invariant_result), dim=1)
 		
-		pool_weights = self.weight_network(x).reshape(-1, 2, 1)
+		pT = torch.sqrt(torch.add(torch.pow(x[..., 0][..., 0], 2), torch.pow(x[..., 1][..., 0], 2))).unsqueeze(1)
+		pool_weights = self.weight_network(pT).reshape(-1, 2, 1)
 		
 		combined_result = torch.mul(combined_result, pool_weights)
 		combined_result = self.sum_pool_2d(combined_result)

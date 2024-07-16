@@ -44,10 +44,10 @@ param_grid = {
 	"optimizer__weight_decay": [1e-1, 1e-2, 1e-3, 1e-4],
 	"module__latent_space_dim": [2 ** i for i in range(9)],
 	"module__hidden_layer_dimensions": [
-		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 2)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 3)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 4)),
-		*map(list, combinations_with_replacement([2 ** i for i in range(11)], 5)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(12)], 2)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(12)], 3)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(12)], 4)),
+		*map(list, combinations_with_replacement([2 ** i for i in range(12)], 5)),
 	]
 }
 grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=3)

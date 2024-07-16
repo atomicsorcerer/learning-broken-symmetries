@@ -1,3 +1,5 @@
+from itertools import combinations_with_replacement
+
 from sklearn.model_selection import GridSearchCV
 from skorch import NeuralNetBinaryClassifier
 import torch
