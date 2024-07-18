@@ -16,7 +16,9 @@ db = EventDataset("../../data/background.csv",
                   "../../data/signal.csv",
                   feature_cols,
                   features_shape=(-1, 2, 4),
-                  limit=20_000)
+                  limit=20_000,
+                  blur_data=True,
+                  blur_size=0.05)
 
 test_percent = 0.01
 training_data, testing_data = random_split(db, [1 - test_percent, test_percent])
@@ -34,7 +36,14 @@ model = NeuralNetBinaryClassifier(
 	module=LatentSpacePooledHybridClassifier,
 	criterion=nn.BCEWithLogitsLoss,
 	optimizer=optim.AdamW,
-	max_epochs=15
+	max_epochs=10,
+	
+	# module__latent_space_dim=16,
+	# module__pfn_mapping_hidden_layer_dimensions=[128, 128, 128],
+	# module__lorenz_invariant_hidden_layer_dimensions=[128, 128, 128],
+	# module__weight_network_hidden_layer_dimensions=[64, 64, 64, 64, 64],
+	# module__classifier_hidden_layer_dimensions=[512, 256, 256, 128],
+	# batch_size=128
 )
 
 param_grid = {

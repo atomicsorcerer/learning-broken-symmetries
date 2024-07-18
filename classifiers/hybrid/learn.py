@@ -27,13 +27,13 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 model = LatentSpacePooledHybridClassifier(16,
-                                          [128, 128],
-                                          [128, 128],
-                                          [64, 64, 64],
-                                          [512, 256, 128])
+                                          [128, 128, 128],
+                                          [128, 128, 128],
+                                          [64, 64, 64, 64, 64],
+                                          [512, 256, 256, 128])
 
 loss_function = torch.nn.BCEWithLogitsLoss()
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.00001, weight_decay=1e-3)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 
 epochs = 20
 loss_over_time = []
@@ -49,7 +49,7 @@ for t in range(epochs):
 	accuracy_over_time.append(acc)
 	
 	if acc > max_acc:
-		torch.save(model, "model.pth")
+		# torch.save(model, "model.pth")
 		max_acc = acc
 		max_acc_epoch = t + 1
 
@@ -59,5 +59,5 @@ print(f"Model saved had {max_acc * 100:<0.2f}% accuracy, and was from epoch {max
 plt.plot(accuracy_over_time[0:max_acc_epoch])
 plt.xlabel("Epoch")
 plt.ylabel("Accuracy")
-plt.title("Learned Weight Hybrid Classifier Accuracy per Epoch")
+plt.title("Learned Weight Pooling Hybrid Classifier - Accuracy per Epoch")
 plt.show()
