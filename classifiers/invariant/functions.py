@@ -33,7 +33,7 @@ def squared_minkowski_norm(p: torch.Tensor) -> torch.Tensor:
 
 def normalize(p: torch.Tensor) -> torch.Tensor:
 	"""
-	Normalizes large numbers to make improve optimization.
+	Normalizes large numbers to improve optimization.
 	
 	Adapted from the psi function from https://arxiv.org/pdf/2201.08187.
 	

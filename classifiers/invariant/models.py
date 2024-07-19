@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from classifiers.invariant.functions import normalize
+
 
 class LorenzInvariantNetwork(nn.Module):
 	def __init__(self, output_dimension: int, hidden_layer_dimensions=None) -> None:
@@ -67,7 +69,7 @@ class LorenzInvariantNetwork(nn.Module):
 		                          - torch.pow(torch.diff(x[..., 1]), 2)
 		                          - torch.pow(torch.diff(x[..., 2]), 2)).squeeze()
 		
-		x = torch.stack([minkowski_inner_product, squared_minkowski_norm]).transpose(0, 1)
+		x = torch.stack([normalize(minkowski_inner_product), normalize(squared_minkowski_norm)]).transpose(0, 1)
 		x = self.stack(x)
 		
 		return x
