@@ -9,7 +9,7 @@ from classifiers.utils import train, test
 from models import *
 from data.event_dataset import EventDataset
 
-blur_size = 0.05
+blur_size = 0.10
 feature_cols = [
 	"px_0", "py_0", "pz_0", "energy_0",
 	"px_1", "py_1", "pz_1", "energy_1",
@@ -31,17 +31,17 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 model = LatentSpacePooledHybridClassifier(16,
-                                          [128, 128, 128],
-                                          [128, 128, 128],
+                                          [128, 128],
+                                          [128, 128],
                                           [64, 64, 64, 64, 64],
-                                          [512, 256, 256, 128])
+                                          [512, 256, 128])
 
-lr = 0.001
+lr = 0.0001
 weight_decay = 0.01
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
 
-epochs = 10
+epochs = 20
 loss_over_time = []
 accuracy_over_time = []
 auc = []

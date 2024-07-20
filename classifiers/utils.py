@@ -52,8 +52,8 @@ def test(dataloader, model, loss_fn, metric, print_results=False) -> tuple[float
 			pred = model(X)
 			test_loss += loss_fn(pred, y).item()
 			
-			auc_input = torch.cat((auc_input, y.reshape((-1))))
-			auc_target = torch.cat((auc_target, torch.nn.functional.sigmoid(pred).reshape((-1))))
+			auc_input = torch.cat((auc_input, torch.nn.functional.sigmoid(pred).reshape((-1))))
+			auc_target = torch.cat((auc_target, y.reshape((-1))))
 			
 			for i_y, i_pred in zip(list(y), list(pred)):
 				i_y = i_y.numpy()
@@ -67,7 +67,7 @@ def test(dataloader, model, loss_fn, metric, print_results=False) -> tuple[float
 	
 	if print_results:
 		print(f"Test Error: Avg loss: {test_loss:>8f}")
-		print(f"Accuracy: {correct}/{size:>0.1f} = {correct / size * 100:<0.2f}% \n")
-		print(f"AUC: {auc:>0.1f} \n")
+		print(f"Accuracy: {correct}/{size:>0.1f} = {correct / size * 100:<0.2f}%")
+		print(f"AUC: {auc:>0.3f} \n")
 	
 	return test_loss, correct / size, auc

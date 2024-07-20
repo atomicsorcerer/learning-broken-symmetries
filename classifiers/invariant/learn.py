@@ -9,7 +9,7 @@ from classifiers.utils import train, test
 from models import LorenzInvariantNetwork
 from data.event_dataset import EventDataset
 
-blur_size = 0.05
+blur_size = 0.10
 feature_cols = [
 	"px_0", "py_0", "pz_0", "energy_0",
 	"px_1", "py_1", "pz_1", "energy_1",
@@ -37,7 +37,7 @@ weight_decay = 0.001
 loss_function = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr, weight_decay=weight_decay)
 
-epochs = 10
+epochs = 30
 loss_over_time = []
 accuracy_over_time = []
 auc = []
@@ -47,7 +47,7 @@ metric = BinaryAUROC()
 for t in range(epochs):
 	print(f"Epoch {t + 1}\n-------------------------------")
 	train(train_dataloader, model, loss_function, optimizer, True)
-	loss, acc, auc_metric = test(test_dataloader, model, loss_function, True)
+	loss, acc, auc_metric = test(test_dataloader, model, loss_function, metric, True)
 	
 	loss_over_time.append(loss)
 	accuracy_over_time.append(acc)
@@ -68,11 +68,11 @@ plt.title("Lorentz-invariant Classifier Accuracy per Epoch")
 plt.show()
 
 log = pl.DataFrame({
-	"epoch": list(range(1, max_acc_epoch + 1)),
-	"loss": loss_over_time[:max_acc_epoch],
-	"acc": accuracy_over_time[:max_acc_epoch],
+	"epoch": list(range(1, epochs + 1)),
+	"loss": loss_over_time,
+	"acc": accuracy_over_time,
 	"auc": auc,
-	"model": "General PFN Classifier",
+	"model": "Lorenz-invariant Classifier",
 	"lr": lr,
 	"weight_decay": weight_decay,
 	"blur_size": blur_size
