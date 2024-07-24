@@ -20,10 +20,11 @@ data = EventDataset("../../data/background.csv",
                     features_shape=(-1, 2, 4),
                     limit=20_000,
                     blur_data=True,
-                    blur_size=blur_size)
+                    blur_size=blur_size,
+                    shuffle_seed=314)
 
 test_percent = 0.20
-training_data, test_data = random_split(data, [1 - test_percent, test_percent])
+training_data, test_data = random_split(data, [1 - test_percent, test_percent], torch.Generator().manual_seed(314))
 
 batch_size = 128
 
@@ -33,8 +34,8 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 model = ParticleFlowNetwork(4,
                             8,
                             16,
-                            [512, 256, 128],
-                            [128, 128])
+                            [512, 256, 256, 256, 128],
+                            [128, 128, 128])
 
 lr = 0.00001
 weight_decay = 0.01
@@ -58,11 +59,14 @@ for t in range(epochs):
 	auc.append(auc_metric)
 	
 	if acc > max_acc:
-		torch.save(model, "model.pth")
 		max_acc = acc
 		max_acc_epoch = t + 1
 
 print("Finished Training")
+
+torch.save(model, "model.pth")
+print("Saved Model")
+
 print(f"Model saved had {max_acc * 100:<0.2f}% accuracy, and was from epoch {max_acc_epoch}.")
 
 plt.plot(accuracy_over_time[0:max_acc_epoch])
