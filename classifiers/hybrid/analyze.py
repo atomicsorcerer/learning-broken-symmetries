@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import random_split
 
-import numpy as np
 from matplotlib import pyplot as plt
 import polars as pl
 
@@ -32,6 +31,31 @@ X = torch.Tensor(X)
 Y = torch.Tensor(Y).unsqueeze(1)
 
 pfn_model = torch.load("model.pth")
+
+# Analysis of weight identification function
+
+pT = torch.sqrt(torch.add(torch.pow(X[..., 0][..., 0], 2), torch.pow(X[..., 1][..., 0], 2))).unsqueeze(1)
+general_weight_result = pfn_model.weight_network(pT)[..., 0]
+pT = pT.squeeze(1)
+
+weight_coords = sorted(zip(pT.numpy(), general_weight_result.detach().numpy()), key=lambda x: x[0])
+
+plt.plot(list(map(lambda x: x[0], weight_coords)), list(map(lambda x: x[1], weight_coords)))
+plt.xlabel("pT")
+plt.ylabel("General classifier proportion")
+plt.title("Latent Space Pooled Hybrid Classifier - General classifier proportion vs. pT")
+plt.show()
+
+pT_vs_gen_prop_log = pl.DataFrame({
+	"pT": list(map(lambda x: x[0], weight_coords)),
+	"general classifier proportion": list(map(lambda x: x[1], weight_coords)),
+	"classifier": "Latent Space Pooled Hybrid Classifier",
+	"blur": blur_size
+})
+pT_vs_gen_prop_log.write_csv("weight_subnet_analysis.csv")
+
+# Analysis of the accuracy/confidence of the classifier vs. pT
+
 result = pfn_model(X)
 result = torch.nn.functional.sigmoid(result)
 acc = 1 - torch.abs(torch.subtract(result, Y)).squeeze()
@@ -47,10 +71,10 @@ plt.ylabel("Accuracy")
 plt.title("Latent Space Pooled Hybrid Classifier - pT vs. accuracy")
 plt.show()
 
-log = pl.DataFrame({
+pT_vs_acc_log = pl.DataFrame({
 	"pT": list(map(lambda x: x[0], coords)),
 	"acc": list(map(lambda x: x[1], coords)),
 	"classifier": "Latent Space Pooled Hybrid Classifier",
 	"blur": blur_size
 })
-log.write_csv("analysis.csv")
+pT_vs_acc_log.write_csv("pT_vs_acc_analysis.csv")

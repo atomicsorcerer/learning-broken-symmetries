@@ -129,6 +129,7 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 	             lorenz_invariant_hidden_layer_dimensions: list[int],
 	             weight_network_hidden_layer_dimensions: list[int],
 	             classifier_hidden_layer_dimensions: list[int],
+	             general_classifier_preference: float | None = None
 	             ):
 		"""
 		Classifier that combines the result of two subnets using a weighted average.
@@ -191,6 +192,7 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 		stack.append(nn.Linear(classifier_hidden_layer_dimensions[-1], 1))
 		
 		self.weight_network = weight_network
+		self.general_classifier_preference = general_classifier_preference
 		self.stack = stack
 		self.avg_pool_2d = nn.AvgPool2d((2, 1))
 	
@@ -201,6 +203,14 @@ class LatentSpacePooledHybridClassifier(nn.Module):
 		
 		pT = torch.sqrt(torch.add(torch.pow(x[..., 0][..., 0], 2), torch.pow(x[..., 1][..., 0], 2))).unsqueeze(1)
 		pool_weights = self.weight_network(pT).reshape(-1, 2, 1)
+		
+		if self.general_classifier_preference is not None:
+			skew_weights = torch.Tensor([
+				[1 - self.general_classifier_preference],
+				[1 - self.general_classifier_preference]
+			])
+			pool_weights = torch.mul(pool_weights, skew_weights)
+			pool_weights = torch.add(pool_weights, torch.Tensor([[self.general_classifier_preference], [0.0]]))
 		
 		combined_result = torch.mul(combined_result, pool_weights)
 		combined_result = self.sum_pool_2d(combined_result)

@@ -29,18 +29,3 @@ def squared_minkowski_norm(p: torch.Tensor) -> torch.Tensor:
 	p_squared = torch.pow(p, 2)
 	
 	return p_squared[3] - p_squared[0] - p_squared[1] - p_squared[2]
-
-
-def normalize(p: torch.Tensor) -> torch.Tensor:
-	"""
-	Normalizes large numbers to improve optimization.
-	
-	Adapted from the psi function from https://arxiv.org/pdf/2201.08187.
-	
-	Args:
-		p: Input value to be normalized.
-
-	Returns:
-		torch.Tensor: Normalized output value.
-	"""
-	return torch.sign(p) * torch.log(torch.abs(p) + 1)

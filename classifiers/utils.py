@@ -71,3 +71,18 @@ def test(dataloader, model, loss_fn, metric, print_results=False) -> tuple[float
 		print(f"AUC: {auc:>0.3f} \n")
 	
 	return test_loss, correct / size, auc
+
+
+def normalize(p: torch.Tensor) -> torch.Tensor:
+	"""
+	Normalizes large numbers to improve optimization.
+
+	Adapted from the psi function from https://arxiv.org/pdf/2201.08187.
+
+	Args:
+		p: Input value to be normalized.
+
+	Returns:
+		torch.Tensor: Normalized output value.
+	"""
+	return torch.sign(p) * torch.log(torch.abs(p) + 1)

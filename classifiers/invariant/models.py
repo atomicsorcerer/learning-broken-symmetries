@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from classifiers.invariant.functions import normalize
+from classifiers.utils import normalize
 
 
 class LorenzInvariantNetwork(nn.Module):

@@ -35,7 +35,8 @@ model = LatentSpacePooledHybridClassifier(16,
                                           [128, 128, 128],
                                           [128, 128, 128],
                                           [64, 64, 64, 64, 64],
-                                          [512, 256, 256, 128])
+                                          [512, 256, 256, 128],
+                                          general_classifier_preference=0.0)
 
 lr = 0.00001
 weight_decay = 0.01
