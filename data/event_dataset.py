@@ -81,11 +81,12 @@ class EventDataset(Dataset):
 			pT = np.sqrt(features[..., 0] ** 2 + features[..., 1] ** 2)
 			phi = torch.arctan(features[..., 1] / features[..., 0])
 			
-			blur = torch.normal(torch.zeros(len(pT)), pT * self.blur_size)
+			blur = torch.normal(torch.zeros(len(pT)), pT * self.blur_size,
+			                    generator=torch.Generator().manual_seed(31415))
 			pT_new = pT + blur
 			
-			temp_features[..., 0] = pT_new * torch.cos(phi)  # Recalculate px
-			temp_features[..., 1] = pT_new * torch.sin(phi)  # Recalculate py
+			temp_features[..., 0] = torch.sign(features[..., 0]) * torch.abs(pT_new * torch.cos(phi))  # Recalculate px
+			temp_features[..., 1] = torch.sign(features[..., 1]) * torch.abs(pT_new * torch.sin(phi))  # Recalculate py
 			temp_features[..., 2] = features[..., 2]  # pz does not change
 			temp_features[..., 3] = torch.sqrt(
 				temp_features[..., 0] ** 2 - features[..., 0] ** 2
