@@ -76,10 +76,23 @@ class EventDataset(Dataset):
 		features = self.features[idx]
 		
 		if self.blur_data:
-			pT = np.sqrt(features[0][0] ** 2 + features[0][1] ** 2)
-			blur = np.random.normal(0, self.blur_size * pT, len(features.reshape((-1))))
-			blur = blur.reshape(self.features_shape[1:])
-			blur = torch.from_numpy(blur)
-			features = torch.add(features, blur).type(torch.float32)
+			temp_features = torch.Tensor(size=features.shape)
+			
+			pT = np.sqrt(features[..., 0] ** 2 + features[..., 1] ** 2)
+			phi = torch.arctan(features[..., 1] / features[..., 0])
+			
+			blur = torch.normal(torch.zeros(len(pT)), pT * self.blur_size)
+			pT_new = pT + blur
+			
+			temp_features[..., 0] = pT_new * torch.cos(phi)  # Recalculate px
+			temp_features[..., 1] = pT_new * torch.sin(phi)  # Recalculate py
+			temp_features[..., 2] = features[..., 2]  # pz does not change
+			temp_features[..., 3] = torch.sqrt(
+				temp_features[..., 0] ** 2 - features[..., 0] ** 2
+				+ temp_features[..., 1] ** 2 - features[..., 1] ** 2
+				+ features[..., 3] ** 2
+			)  # Recalculate E
+			
+			return temp_features, torch.unsqueeze(self.labels[idx], 0)
 		
 		return features, torch.unsqueeze(self.labels[idx], 0)
