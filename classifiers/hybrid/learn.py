@@ -31,12 +31,13 @@ batch_size = 128
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
+general_classifier_preference = None
 model = LatentSpacePooledHybridClassifier(16,
                                           [128, 128, 128],
                                           [128, 128, 128],
                                           [64, 64, 64, 64, 64],
                                           [512, 256, 256, 128],
-                                          general_classifier_preference=0.0)
+                                          general_classifier_preference=general_classifier_preference)
 
 lr = 0.00001
 weight_decay = 0.01
@@ -84,7 +85,8 @@ log = pl.DataFrame({
 	"model": "Latent Space Pooled Hybrid Classifier",
 	"lr": lr,
 	"weight_decay": weight_decay,
-	"blur_size": blur_size
+	"blur_size": blur_size,
+	"general_classifier_preference": general_classifier_preference
 })
 log.write_csv("log.csv")
 print("Saved log.csv")

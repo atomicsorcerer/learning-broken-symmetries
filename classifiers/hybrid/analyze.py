@@ -62,9 +62,12 @@ acc = 1 - torch.abs(torch.subtract(result, Y)).squeeze()
 acc = acc.tolist()
 pT = torch.sqrt(torch.add(torch.pow(X[..., 0][..., 0], 2), torch.pow(X[..., 1][..., 0], 2)))
 pT = pT.tolist()
+muon_inv_mass = torch.sqrt((X[..., 3][..., 0] + X[..., 3][..., 1]) ** 2
+                           - ((X[..., 0][..., 0] + X[..., 0][..., 1]) ** 2
+                              + (X[..., 1][..., 0] + X[..., 1][..., 1]) ** 2
+                              + (X[..., 2][..., 0] + X[..., 2][..., 1]) ** 2))
 
-coords = sorted(zip(pT, acc), key=lambda x: x[0])
-
+coords = sorted(zip(pT, acc, result, Y, muon_inv_mass), key=lambda x: x[0])
 plt.plot(list(map(lambda x: x[0], coords)), list(map(lambda x: x[1], coords)), marker="o", linestyle="", markersize=0.5)
 plt.xlabel("pT")
 plt.ylabel("Accuracy")
@@ -73,7 +76,10 @@ plt.show()
 
 pT_vs_acc_log = pl.DataFrame({
 	"pT": list(map(lambda x: x[0], coords)),
+	"muon_inv_mass": list(map(lambda x: x[4], coords)),
 	"acc": list(map(lambda x: x[1], coords)),
+	"output": list(map(lambda x: x[2].item(), coords)),
+	"correct_output": list(map(lambda x: x[3].item(), coords)),
 	"classifier": "Latent Space Pooled Hybrid Classifier",
 	"blur": blur_size
 })

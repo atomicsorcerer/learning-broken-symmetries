@@ -98,6 +98,15 @@ class ParticleFlowNetwork(nn.Module):
 		Returns:
 			torch.Tensor: Output tensor with two values each representing the probabilities of signal and background.
 		"""
+		# rapidity = 0.5 * (torch.log((x[..., 3] + x[..., 2]) / (x[..., 3] - x[..., 2])))
+		# print(x)
+		# Need to figure out how to deal with cases where p_z is more negative than energy is positive
+		# print(((x[..., 3] < torch.abs(x[..., 2]))))
+		# x = torch.sign(x) * torch.log(torch.abs(x) + 1)
+		
+		# pT = torch.sqrt(torch.add(torch.pow(x[..., 0][..., 0], 2), torch.pow(x[..., 1][..., 0], 2)))
+		# rapidity = 0.5 * (torch.log((x[..., 3] + x[..., 2]) / (x[..., 3] - x[..., 2])))
+		# x = torch.sign(x) * torch.log(torch.abs(x) + 1)
 		x = self.p_map(x)
 		x = self.stack(x)
 		
