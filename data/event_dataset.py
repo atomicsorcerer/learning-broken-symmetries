@@ -1,7 +1,8 @@
 import numpy as np
 import polars as pl
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split, DataLoader
+from matplotlib import pyplot as plt
 
 
 class EventDataset(Dataset):
@@ -97,3 +98,73 @@ class EventDataset(Dataset):
 			return temp_features, torch.unsqueeze(self.labels[idx], 0)
 		
 		return features, torch.unsqueeze(self.labels[idx], 0)
+
+
+if __name__ == "__main__":
+	cols = [
+		"px_0", "py_0", "pz_0", "energy_0",
+		"px_1", "py_1", "pz_1", "energy_1",
+	]
+	data = EventDataset("background.csv",
+	                    "signal.csv",
+	                    cols,
+	                    features_shape=(-1, 2, 4),
+	                    limit=20_000,
+	                    blur_data=True,
+	                    blur_size=0.10,
+	                    shuffle_seed=314)
+	
+	test_percent = 0.99
+	training_data, test_data = random_split(data, [1 - test_percent, test_percent], torch.Generator().manual_seed(314))
+	
+	train_dataloader = DataLoader(training_data, shuffle=True)
+	test_dataloader = DataLoader(test_data, shuffle=True)
+	
+	X_signal = []
+	Y_signal = []
+	X_bg = []
+	Y_bg = []
+	for x in test_data:
+		if x[1].item() == 1:
+			X_signal.append(x[0].tolist())
+			Y_signal.append(x[1].item())
+		else:
+			X_bg.append(x[0].tolist())
+			Y_bg.append(x[1].item())
+	
+	X_signal = torch.Tensor(X_signal)
+	Y_signal = torch.Tensor(Y_signal).unsqueeze(1)
+	
+	pT_signal = torch.sqrt(torch.add(torch.pow(X_signal[..., 0][..., 0], 2), torch.pow(X_signal[..., 1][..., 0], 2)))
+	pT_signal = pT_signal.tolist()
+	muon_inv_mass_signal = torch.sqrt((X_signal[..., 3][..., 0] + X_signal[..., 3][..., 1]) ** 2
+	                                  - ((X_signal[..., 0][..., 0] + X_signal[..., 0][..., 1]) ** 2
+	                                     + (X_signal[..., 1][..., 0] + X_signal[..., 1][..., 1]) ** 2
+	                                     + (X_signal[..., 2][..., 0] + X_signal[..., 2][..., 1]) ** 2))
+	
+	X_bg = torch.Tensor(X_bg)
+	Y_bg = torch.Tensor(Y_bg).unsqueeze(1)
+	
+	pT_bg = torch.sqrt(torch.add(torch.pow(X_bg[..., 0][..., 0], 2), torch.pow(X_bg[..., 1][..., 0], 2)))
+	pT_bg = pT_bg.tolist()
+	muon_inv_mass_bg = torch.sqrt((X_bg[..., 3][..., 0] + X_bg[..., 3][..., 1]) ** 2
+	                              - ((X_bg[..., 0][..., 0] + X_bg[..., 0][..., 1]) ** 2
+	                                 + (X_bg[..., 1][..., 0] + X_bg[..., 1][..., 1]) ** 2
+	                                 + (X_bg[..., 2][..., 0] + X_bg[..., 2][..., 1]) ** 2))
+	
+	fig, axs = plt.subplots(2, sharex=True, sharey=True)
+	fig.suptitle("Distribution of pT and mass")
+	
+	n_bin = 20
+	axs[0].hist2d(pT_signal, muon_inv_mass_signal, bins=n_bin, range=[[0, 100], [0, 300]])
+	axs[1].hist2d(pT_bg, muon_inv_mass_bg, bins=n_bin, range=[[0, 100], [0, 300]])
+	
+	axs[0].set_title("Signal")
+	axs[1].set_title("Background")
+	
+	axs[0].set_xlabel("pT")
+	axs[1].set_xlabel("pT")
+	axs[0].set_ylabel("Mass")
+	axs[1].set_ylabel("Mass")
+	
+	plt.show()
