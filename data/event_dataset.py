@@ -3,6 +3,7 @@ import polars as pl
 import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from matplotlib import pyplot as plt
+import polars as pl
 
 
 class EventDataset(Dataset):
@@ -114,17 +115,13 @@ if __name__ == "__main__":
 	                    blur_size=0.10,
 	                    shuffle_seed=314)
 	
-	test_percent = 0.99
-	training_data, test_data = random_split(data, [1 - test_percent, test_percent], torch.Generator().manual_seed(314))
-	
-	train_dataloader = DataLoader(training_data, shuffle=True)
-	test_dataloader = DataLoader(test_data, shuffle=True)
+	dataloader = DataLoader(data, shuffle=True)
 	
 	X_signal = []
 	Y_signal = []
 	X_bg = []
 	Y_bg = []
-	for x in test_data:
+	for x in dataloader:
 		if x[1].item() == 1:
 			X_signal.append(x[0].tolist())
 			Y_signal.append(x[1].item())
@@ -135,27 +132,35 @@ if __name__ == "__main__":
 	X_signal = torch.Tensor(X_signal)
 	Y_signal = torch.Tensor(Y_signal).unsqueeze(1)
 	
-	pT_signal = torch.sqrt(torch.add(torch.pow(X_signal[..., 0][..., 0], 2), torch.pow(X_signal[..., 1][..., 0], 2)))
+	pT_signal = torch.sqrt(
+		torch.add(torch.pow(X_signal[..., 0][..., 0], 2), torch.pow(X_signal[..., 1][..., 0], 2))).flatten()
 	pT_signal = pT_signal.tolist()
 	muon_inv_mass_signal = torch.sqrt((X_signal[..., 3][..., 0] + X_signal[..., 3][..., 1]) ** 2
 	                                  - ((X_signal[..., 0][..., 0] + X_signal[..., 0][..., 1]) ** 2
 	                                     + (X_signal[..., 1][..., 0] + X_signal[..., 1][..., 1]) ** 2
-	                                     + (X_signal[..., 2][..., 0] + X_signal[..., 2][..., 1]) ** 2))
+	                                     + (X_signal[..., 2][..., 0] + X_signal[..., 2][..., 1]) ** 2)).flatten()
 	
 	X_bg = torch.Tensor(X_bg)
 	Y_bg = torch.Tensor(Y_bg).unsqueeze(1)
 	
-	pT_bg = torch.sqrt(torch.add(torch.pow(X_bg[..., 0][..., 0], 2), torch.pow(X_bg[..., 1][..., 0], 2)))
+	pT_bg = torch.sqrt(torch.add(torch.pow(X_bg[..., 0][..., 0], 2), torch.pow(X_bg[..., 1][..., 0], 2))).flatten()
 	pT_bg = pT_bg.tolist()
 	muon_inv_mass_bg = torch.sqrt((X_bg[..., 3][..., 0] + X_bg[..., 3][..., 1]) ** 2
 	                              - ((X_bg[..., 0][..., 0] + X_bg[..., 0][..., 1]) ** 2
 	                                 + (X_bg[..., 1][..., 0] + X_bg[..., 1][..., 1]) ** 2
-	                                 + (X_bg[..., 2][..., 0] + X_bg[..., 2][..., 1]) ** 2))
+	                                 + (X_bg[..., 2][..., 0] + X_bg[..., 2][..., 1]) ** 2)).flatten()
+	
+	n_bin = 20
+	signal_distro = np.histogram2d(muon_inv_mass_signal, pT_signal, n_bin, density=True)
+	
+	print("\t".join(map(str, list(signal_distro[1]))))
+	print("\t".join(map(str, list(signal_distro[2]))))
+	distro = pl.DataFrame(signal_distro[0])
+	distro.write_csv("signal_distro.csv")
 	
 	fig, axs = plt.subplots(2, sharex=True, sharey=True)
 	fig.suptitle("Distribution of pT and mass")
 	
-	n_bin = 20
 	axs[0].hist2d(pT_signal, muon_inv_mass_signal, bins=n_bin, range=[[0, 100], [0, 300]])
 	axs[1].hist2d(pT_bg, muon_inv_mass_bg, bins=n_bin, range=[[0, 100], [0, 300]])
 	
