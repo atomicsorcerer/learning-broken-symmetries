@@ -3,7 +3,7 @@ import polars as pl
 import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from matplotlib import pyplot as plt
-import polars as pl
+from sklearn.preprocessing import normalize
 
 
 class EventDataset(Dataset):
@@ -150,19 +150,25 @@ if __name__ == "__main__":
 	                                 + (X_bg[..., 1][..., 0] + X_bg[..., 1][..., 1]) ** 2
 	                                 + (X_bg[..., 2][..., 0] + X_bg[..., 2][..., 1]) ** 2)).flatten()
 	
-	n_bin = 20
-	signal_distro = np.histogram2d(muon_inv_mass_signal, pT_signal, n_bin, density=True)
+	n_bins = 50
+	(signal_distro, x_axis, y_axis) = np.histogram2d(muon_inv_mass_signal, pT_signal, n_bins, density=False)
+	signal_distro = signal_distro.reshape((-1,))
+	signal_distro = signal_distro / signal_distro.sum()
+	signal_distro = signal_distro.reshape((n_bins, n_bins))
 	
-	print("\t".join(map(str, list(signal_distro[1]))))
-	print("\t".join(map(str, list(signal_distro[2]))))
-	distro = pl.DataFrame(signal_distro[0])
+	print("\t".join(map(str, list(x_axis)[:-1])))
+	print("\t".join(map(str, list(y_axis)[:-1])))
+	distro = pl.DataFrame(signal_distro)
 	distro.write_csv("signal_distro.csv")
 	
-	fig, axs = plt.subplots(2, sharex=True, sharey=True)
+	axes = pl.DataFrame([list(x_axis)[:-1], list(y_axis)[:-1]], schema=["mass", "pT"])
+	axes.write_csv("distro_axes.csv")
+	
+	fig, axs = plt.subplots(2)
 	fig.suptitle("Distribution of pT and mass")
 	
-	axs[0].hist2d(pT_signal, muon_inv_mass_signal, bins=n_bin, range=[[0, 100], [0, 300]])
-	axs[1].hist2d(pT_bg, muon_inv_mass_bg, bins=n_bin, range=[[0, 100], [0, 300]])
+	axs[0].hist2d(pT_signal, muon_inv_mass_signal, bins=n_bins)
+	axs[1].hist2d(pT_bg, muon_inv_mass_bg, bins=n_bins)
 	
 	axs[0].set_title("Signal")
 	axs[1].set_title("Background")
