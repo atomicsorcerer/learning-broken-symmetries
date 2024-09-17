@@ -1,9 +1,8 @@
 import numpy as np
 import polars as pl
 import torch
-from torch.utils.data import Dataset, random_split, DataLoader
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import normalize
 
 
 class EventDataset(Dataset):
@@ -16,7 +15,8 @@ class EventDataset(Dataset):
 			limit: int = 10_000,
 			shuffle_seed: int | None = None,
 			blur_data: bool = False,
-			blur_size: float = 0.1
+			blur_size: float = 0.1,
+			n_bins=50
 	) -> None:
 		"""
 		Initializes an EventDataset for given CSV files of signal and background.
@@ -38,7 +38,99 @@ class EventDataset(Dataset):
 		signal_dataset = pl.read_csv(signal_file_path).with_columns(
 			pl.Series([1]).alias("label")
 		)
-		amalgam_dataset = pl.concat((bg_dataset, signal_dataset)).select([*feature_cols, "label"]).sample(
+		
+		amalgam_dataset = pl.concat((bg_dataset, signal_dataset))
+		amalgam_dataset = amalgam_dataset.with_columns(
+			[(np.sqrt(pl.col("px_0") ** 2 + pl.col("py_0") ** 2)).alias("pT_0"),
+			 (np.sqrt(pl.col("px_1") ** 2 + pl.col("py_1") ** 2)).alias("pT_1"),
+			 (np.sqrt(
+				 (pl.col("energy_0") + pl.col("energy_1")) ** 2
+				 - (pl.col("px_0") + pl.col("px_1")) ** 2
+				 - (pl.col("py_0") + pl.col("py_1")) ** 2
+				 - (pl.col("pz_0") + pl.col("pz_1")) ** 2
+			 )).alias("muon_pair_inv_mass")])
+		
+		if blur_data:
+			blur = np.random.default_rng(shuffle_seed).normal(0,
+			                                                  amalgam_dataset.get_column("pT_0").to_numpy() * blur_size)
+			amalgam_dataset = amalgam_dataset.with_columns([
+				(np.arctan(pl.col("py_0") / pl.col("px_0"))).alias("phi_0"),
+				(np.arctan(pl.col("py_1") / pl.col("px_1"))).alias("phi_1")
+			])
+			
+			amalgam_dataset = amalgam_dataset.with_columns([
+				(pl.col("pT_0") + blur).alias("blurred_pT_0"),
+				(pl.col("pT_1") + blur).alias("blurred_pT_1")
+			])
+			amalgam_dataset = amalgam_dataset.with_columns([
+				(np.sign(pl.col("px_0")) * np.abs(pl.col("blurred_pT_0") * np.cos(pl.col("phi_0")))).alias(
+					"blurred_px_0"),
+				(np.sign(pl.col("px_1")) * np.abs(pl.col("blurred_pT_1") * np.cos(pl.col("phi_1")))).alias(
+					"blurred_px_1"),
+				
+				(np.sign(pl.col("py_0")) * np.abs(pl.col("blurred_pT_0") * np.sin(pl.col("phi_0")))).alias(
+					"blurred_py_0"),
+				(np.sign(pl.col("py_1")) * np.abs(pl.col("blurred_pT_1") * np.sin(pl.col("phi_1")))).alias(
+					"blurred_py_1")
+			])
+			amalgam_dataset = amalgam_dataset.with_columns([
+				(np.sqrt(
+					pl.col("blurred_px_0") ** 2 - pl.col("px_0") ** 2
+					+ pl.col("blurred_py_0") ** 2 - pl.col("py_0") ** 2
+					+ pl.col("energy_0") ** 2
+				)).alias("blurred_energy_0"),
+				(np.sqrt(
+					pl.col("blurred_px_1") ** 2 - pl.col("px_1") ** 2
+					+ pl.col("blurred_py_1") ** 2 - pl.col("py_1") ** 2
+					+ pl.col("energy_1") ** 2
+				)).alias("blurred_energy_1"),
+			])
+			amalgam_dataset = amalgam_dataset.with_columns(
+				(np.sqrt(
+					(pl.col("blurred_energy_0") + pl.col("blurred_energy_1")) ** 2
+					- (pl.col("blurred_px_0") + pl.col("blurred_px_1")) ** 2
+					- (pl.col("blurred_py_0") + pl.col("blurred_py_1")) ** 2
+					- (pl.col("pz_0") + pl.col("pz_1")) ** 2
+				)).alias("blurred_muon_pair_inv_mass"))
+		
+		signal_distro, x_axis, y_axis = np.histogram2d(
+			amalgam_dataset.filter(
+				pl.col("label") == 1
+			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
+			amalgam_dataset.filter(
+				pl.col("label") == 1
+			).get_column("blurred_pT_0").to_numpy(), n_bins)
+		x_axis, y_axis = x_axis[:-1], y_axis[:-1]
+		
+		bg_distro, _, _ = np.histogram2d(
+			amalgam_dataset.filter(
+				pl.col("label") == 0
+			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
+			amalgam_dataset.filter(
+				pl.col("label") == 0
+			).get_column("blurred_pT_0").to_numpy(), n_bins, range=[
+				[min(x_axis), max(x_axis)], [min(y_axis), max(y_axis)]
+			])
+		
+		mass_indices = np.searchsorted(x_axis, amalgam_dataset.get_column("blurred_muon_pair_inv_mass").to_numpy(),
+		                               side="right") - 1
+		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="right") - 1
+		amalgam_dataset = amalgam_dataset.with_columns([
+			pl.Series("signal_distro_weight", signal_distro[pT_indices, mass_indices]),
+			pl.Series("bg_distro_weight", bg_distro[pT_indices, mass_indices])
+		])
+		
+		amalgam_dataset = amalgam_dataset.with_columns(
+			(pl.col("signal_distro_weight") / (
+					pl.col("label") + pl.col("bg_distro_weight") * (0 ** pl.col("label"))))
+			.fill_nan(0.0)  # NaN values are caused when both background and signal have no events on the wanted range
+			.replace(np.inf, 0.0)  # Infinite values indicate that the background event is outside the distribution
+			.alias("norm_weight")
+		)
+		norm_weights = amalgam_dataset.get_column("norm_weight")
+		self.norm_weights = torch.Tensor(norm_weights)
+		
+		amalgam_dataset = amalgam_dataset.select([*feature_cols, "label"]).sample(
 			limit,
 			shuffle=True if shuffle_seed is not None else False,
 			seed=shuffle_seed,
@@ -75,107 +167,27 @@ class EventDataset(Dataset):
 		Returns:
 			tuple: Feature and label at the index (feature, label)
 		"""
-		features = self.features[idx]
-		
-		if self.blur_data:
-			temp_features = torch.Tensor(size=features.shape)
-			
-			pT = np.sqrt(features[..., 0] ** 2 + features[..., 1] ** 2)
-			phi = torch.arctan(features[..., 1] / features[..., 0])
-			
-			blur = torch.normal(torch.zeros(len(pT)), pT * self.blur_size,
-			                    generator=torch.Generator().manual_seed(31415))
-			pT_new = pT + blur
-			
-			temp_features[..., 0] = torch.sign(features[..., 0]) * torch.abs(pT_new * torch.cos(phi))  # Recalculate px
-			temp_features[..., 1] = torch.sign(features[..., 1]) * torch.abs(pT_new * torch.sin(phi))  # Recalculate py
-			temp_features[..., 2] = features[..., 2]  # pz does not change
-			temp_features[..., 3] = torch.sqrt(
-				temp_features[..., 0] ** 2 - features[..., 0] ** 2
-				+ temp_features[..., 1] ** 2 - features[..., 1] ** 2
-				+ features[..., 3] ** 2
-			)  # Recalculate E
-			
-			return temp_features, torch.unsqueeze(self.labels[idx], 0)
-		
-		return features, torch.unsqueeze(self.labels[idx], 0)
+		return self.features[idx], torch.unsqueeze(self.labels[idx], 0)
 
 
 if __name__ == "__main__":
-	cols = [
-		"px_0", "py_0", "pz_0", "energy_0",
-		"px_1", "py_1", "pz_1", "energy_1",
+	blur_size = 0.10
+	feature_cols = [
+		"blurred_muon_pair_inv_mass"
 	]
 	data = EventDataset("background.csv",
 	                    "signal.csv",
-	                    cols,
-	                    features_shape=(-1, 2, 4),
+	                    feature_cols,
+	                    features_shape=(-1, 1),
 	                    limit=20_000,
 	                    blur_data=True,
-	                    blur_size=0.10,
+	                    blur_size=blur_size,
 	                    shuffle_seed=314)
 	
-	dataloader = DataLoader(data, shuffle=True)
+	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True)
 	
-	X_signal = []
-	Y_signal = []
-	X_bg = []
-	Y_bg = []
-	for x in dataloader:
-		if x[1].item() == 1:
-			X_signal.append(x[0].tolist())
-			Y_signal.append(x[1].item())
-		else:
-			X_bg.append(x[0].tolist())
-			Y_bg.append(x[1].item())
+	classes, label = data[list(sampler)]
+	label = label.reshape((-1))
 	
-	X_signal = torch.Tensor(X_signal)
-	Y_signal = torch.Tensor(Y_signal).unsqueeze(1)
-	
-	pT_signal = torch.sqrt(
-		torch.add(torch.pow(X_signal[..., 0][..., 0], 2), torch.pow(X_signal[..., 1][..., 0], 2))).flatten()
-	pT_signal = pT_signal.tolist()
-	muon_inv_mass_signal = torch.sqrt((X_signal[..., 3][..., 0] + X_signal[..., 3][..., 1]) ** 2
-	                                  - ((X_signal[..., 0][..., 0] + X_signal[..., 0][..., 1]) ** 2
-	                                     + (X_signal[..., 1][..., 0] + X_signal[..., 1][..., 1]) ** 2
-	                                     + (X_signal[..., 2][..., 0] + X_signal[..., 2][..., 1]) ** 2)).flatten()
-	
-	X_bg = torch.Tensor(X_bg)
-	Y_bg = torch.Tensor(Y_bg).unsqueeze(1)
-	
-	pT_bg = torch.sqrt(torch.add(torch.pow(X_bg[..., 0][..., 0], 2), torch.pow(X_bg[..., 1][..., 0], 2))).flatten()
-	pT_bg = pT_bg.tolist()
-	muon_inv_mass_bg = torch.sqrt((X_bg[..., 3][..., 0] + X_bg[..., 3][..., 1]) ** 2
-	                              - ((X_bg[..., 0][..., 0] + X_bg[..., 0][..., 1]) ** 2
-	                                 + (X_bg[..., 1][..., 0] + X_bg[..., 1][..., 1]) ** 2
-	                                 + (X_bg[..., 2][..., 0] + X_bg[..., 2][..., 1]) ** 2)).flatten()
-	
-	n_bins = 50
-	(signal_distro, x_axis, y_axis) = np.histogram2d(muon_inv_mass_signal, pT_signal, n_bins, density=False)
-	signal_distro = signal_distro.reshape((-1,))
-	signal_distro = signal_distro / signal_distro.sum()
-	signal_distro = signal_distro.reshape((n_bins, n_bins))
-	
-	print("\t".join(map(str, list(x_axis)[:-1])))
-	print("\t".join(map(str, list(y_axis)[:-1])))
-	distro = pl.DataFrame(signal_distro)
-	distro.write_csv("signal_distro.csv")
-	
-	axes = pl.DataFrame([list(x_axis)[:-1], list(y_axis)[:-1]], schema=["mass", "pT"])
-	axes.write_csv("distro_axes.csv")
-	
-	fig, axs = plt.subplots(2)
-	fig.suptitle("Distribution of pT and mass")
-	
-	axs[0].hist2d(pT_signal, muon_inv_mass_signal, bins=n_bins)
-	axs[1].hist2d(pT_bg, muon_inv_mass_bg, bins=n_bins)
-	
-	axs[0].set_title("Signal")
-	axs[1].set_title("Background")
-	
-	axs[0].set_xlabel("pT")
-	axs[1].set_xlabel("pT")
-	axs[0].set_ylabel("Mass")
-	axs[1].set_ylabel("Mass")
-	
+	plt.hist([classes[label == 1].numpy().reshape(-1), classes[label == 0].numpy().reshape(-1)], bins=100)
 	plt.show()
