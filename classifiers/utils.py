@@ -17,20 +17,8 @@ def train(dataloader, model, loss_fn, optimizer, print_results=False) -> None:
 	model.train()
 	for batch, (X, y) in enumerate(dataloader):
 		# Compute prediction error
-		pT = torch.sqrt(torch.add(torch.pow(X[..., 0][..., 0], 2), torch.pow(X[..., 1][..., 0], 2))).flatten()
-		mass = torch.sqrt((X[..., 3][..., 0] + X[..., 3][..., 1]) ** 2
-		                  - ((X[..., 0][..., 0] + X[..., 0][..., 1]) ** 2
-		                     + (X[..., 1][..., 0] + X[..., 1][..., 1]) ** 2
-		                     + (X[..., 2][..., 0] + X[..., 2][..., 1]) ** 2)).flatten()
-		
-		groupings = torch.Tensor(pl.read_csv("../../data/distro_axes.csv").to_numpy())
-		distro = torch.Tensor(pl.read_csv("../../data/signal_distro.csv").to_numpy())
-		weights = get_weights(mass, pT, distro, groupings[..., 0], groupings[..., 1])
-		loss = torch.nn.BCEWithLogitsLoss(reduction="none")
-		
 		pred = model(X)
-		loss = loss(pred, y)
-		loss = torch.mean(loss * weights)
+		loss = loss_fn(pred, y)
 		
 		# Backpropagation
 		optimizer.zero_grad()

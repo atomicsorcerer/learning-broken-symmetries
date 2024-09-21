@@ -63,8 +63,11 @@ def convert_from_lhe(file_path: str, limit: int | None = None) -> list[dict]:
 			                           + (event["py_0"] + event["py_1"]) ** 2
 			                           + (event["pz_0"] + event["pz_1"]) ** 2))
 			
+			pT = np.sqrt(np.add(np.power(event["px_0"], 2), np.power(event["py_0"], 2)))
+			
 			event["n"] = num_of_particles
 			event["muon_inv_mass"] = muon_inv_mass
+			event["pT"] = pT
 			events.append(event)
 	
 	return events

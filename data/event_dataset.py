@@ -14,8 +14,7 @@ class EventDataset(Dataset):
 			features_shape: tuple,
 			limit: int = 10_000,
 			shuffle_seed: int | None = None,
-			blur_data: bool = False,
-			blur_size: float = 0.1,
+			blur_size: float = 0.0,
 			n_bins=50
 	) -> None:
 		"""
@@ -50,71 +49,71 @@ class EventDataset(Dataset):
 				 - (pl.col("pz_0") + pl.col("pz_1")) ** 2
 			 )).alias("muon_pair_inv_mass")])
 		
-		if blur_data:
-			blur = np.random.default_rng(shuffle_seed).normal(0,
-			                                                  amalgam_dataset.get_column("pT_0").to_numpy() * blur_size)
-			amalgam_dataset = amalgam_dataset.with_columns([
-				(np.arctan(pl.col("py_0") / pl.col("px_0"))).alias("phi_0"),
-				(np.arctan(pl.col("py_1") / pl.col("px_1"))).alias("phi_1")
-			])
+		blur = np.random.default_rng(shuffle_seed).normal(0,
+		                                                  amalgam_dataset.get_column("pT_0").to_numpy() * blur_size)
+		amalgam_dataset = amalgam_dataset.with_columns([
+			(np.arctan(pl.col("py_0") / pl.col("px_0"))).alias("phi_0"),
+			(np.arctan(pl.col("py_1") / pl.col("px_1"))).alias("phi_1")
+		])
+		
+		amalgam_dataset = amalgam_dataset.with_columns([
+			(pl.col("pT_0") + blur).alias("blurred_pT_0"),
+			(pl.col("pT_1") + blur).alias("blurred_pT_1")
+		])
+		amalgam_dataset = amalgam_dataset.with_columns([
+			(np.sign(pl.col("px_0")) * np.abs(pl.col("blurred_pT_0") * np.cos(pl.col("phi_0")))).alias(
+				"blurred_px_0"),
+			(np.sign(pl.col("px_1")) * np.abs(pl.col("blurred_pT_1") * np.cos(pl.col("phi_1")))).alias(
+				"blurred_px_1"),
 			
-			amalgam_dataset = amalgam_dataset.with_columns([
-				(pl.col("pT_0") + blur).alias("blurred_pT_0"),
-				(pl.col("pT_1") + blur).alias("blurred_pT_1")
-			])
-			amalgam_dataset = amalgam_dataset.with_columns([
-				(np.sign(pl.col("px_0")) * np.abs(pl.col("blurred_pT_0") * np.cos(pl.col("phi_0")))).alias(
-					"blurred_px_0"),
-				(np.sign(pl.col("px_1")) * np.abs(pl.col("blurred_pT_1") * np.cos(pl.col("phi_1")))).alias(
-					"blurred_px_1"),
-				
-				(np.sign(pl.col("py_0")) * np.abs(pl.col("blurred_pT_0") * np.sin(pl.col("phi_0")))).alias(
-					"blurred_py_0"),
-				(np.sign(pl.col("py_1")) * np.abs(pl.col("blurred_pT_1") * np.sin(pl.col("phi_1")))).alias(
-					"blurred_py_1")
-			])
-			amalgam_dataset = amalgam_dataset.with_columns([
-				(np.sqrt(
-					pl.col("blurred_px_0") ** 2 - pl.col("px_0") ** 2
-					+ pl.col("blurred_py_0") ** 2 - pl.col("py_0") ** 2
-					+ pl.col("energy_0") ** 2
-				)).alias("blurred_energy_0"),
-				(np.sqrt(
-					pl.col("blurred_px_1") ** 2 - pl.col("px_1") ** 2
-					+ pl.col("blurred_py_1") ** 2 - pl.col("py_1") ** 2
-					+ pl.col("energy_1") ** 2
-				)).alias("blurred_energy_1"),
-			])
-			amalgam_dataset = amalgam_dataset.with_columns(
-				(np.sqrt(
-					(pl.col("blurred_energy_0") + pl.col("blurred_energy_1")) ** 2
-					- (pl.col("blurred_px_0") + pl.col("blurred_px_1")) ** 2
-					- (pl.col("blurred_py_0") + pl.col("blurred_py_1")) ** 2
-					- (pl.col("pz_0") + pl.col("pz_1")) ** 2
-				)).alias("blurred_muon_pair_inv_mass"))
+			(np.sign(pl.col("py_0")) * np.abs(pl.col("blurred_pT_0") * np.sin(pl.col("phi_0")))).alias(
+				"blurred_py_0"),
+			(np.sign(pl.col("py_1")) * np.abs(pl.col("blurred_pT_1") * np.sin(pl.col("phi_1")))).alias(
+				"blurred_py_1")
+		])
+		amalgam_dataset = amalgam_dataset.with_columns([
+			(np.sqrt(
+				pl.col("blurred_px_0") ** 2 - pl.col("px_0") ** 2
+				+ pl.col("blurred_py_0") ** 2 - pl.col("py_0") ** 2
+				+ pl.col("energy_0") ** 2
+			)).alias("blurred_energy_0"),
+			(np.sqrt(
+				pl.col("blurred_px_1") ** 2 - pl.col("px_1") ** 2
+				+ pl.col("blurred_py_1") ** 2 - pl.col("py_1") ** 2
+				+ pl.col("energy_1") ** 2
+			)).alias("blurred_energy_1"),
+		])
+		amalgam_dataset = amalgam_dataset.with_columns(
+			(np.sqrt(
+				(pl.col("blurred_energy_0") + pl.col("blurred_energy_1")) ** 2
+				- (pl.col("blurred_px_0") + pl.col("blurred_px_1")) ** 2
+				- (pl.col("blurred_py_0") + pl.col("blurred_py_1")) ** 2
+				- (pl.col("pz_0") + pl.col("pz_1")) ** 2
+			)).alias("blurred_muon_pair_inv_mass"))
 		
-		signal_distro, x_axis, y_axis = np.histogram2d(
+		bg_distro, x_axis, y_axis = np.histogram2d(
 			amalgam_dataset.filter(
-				pl.col("label") == 1
+				pl.col("label") == 0
 			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
 			amalgam_dataset.filter(
-				pl.col("label") == 1
+				pl.col("label") == 0
 			).get_column("blurred_pT_0").to_numpy(), n_bins)
-		x_axis, y_axis = x_axis[:-1], y_axis[:-1]
 		
-		bg_distro, _, _ = np.histogram2d(
+		signal_distro, _, _ = np.histogram2d(
 			amalgam_dataset.filter(
-				pl.col("label") == 0
+				pl.col("label") == 1
 			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
 			amalgam_dataset.filter(
-				pl.col("label") == 0
+				pl.col("label") == 1
 			).get_column("blurred_pT_0").to_numpy(), n_bins, range=[
 				[min(x_axis), max(x_axis)], [min(y_axis), max(y_axis)]
 			])
 		
+		x_axis, y_axis = x_axis[:-1], y_axis[:-1]
+		
 		mass_indices = np.searchsorted(x_axis, amalgam_dataset.get_column("blurred_muon_pair_inv_mass").to_numpy(),
-		                               side="right") - 1
-		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="right") - 1
+		                               side="left") - 1
+		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="left") - 1
 		amalgam_dataset = amalgam_dataset.with_columns([
 			pl.Series("signal_distro_weight", signal_distro[pT_indices, mass_indices]),
 			pl.Series("bg_distro_weight", bg_distro[pT_indices, mass_indices])
@@ -122,16 +121,18 @@ class EventDataset(Dataset):
 		
 		amalgam_dataset = amalgam_dataset.with_columns(
 			(pl.col("signal_distro_weight") / (
-					pl.col("label") + pl.col("bg_distro_weight") * (0 ** pl.col("label"))))
+					pl.col("label") * pl.col("signal_distro_weight")
+					+ (1 - pl.col("label")) * pl.col("bg_distro_weight")))
 			.fill_nan(0.0)  # NaN values are caused when both background and signal have no events on the wanted range
 			.replace(np.inf, 0.0)  # Infinite values indicate that the background event is outside the distribution
 			.alias("norm_weight")
-		)
+		).filter(pl.col("norm_weight") != 0.0)
+		
 		norm_weights = amalgam_dataset.get_column("norm_weight")
 		self.norm_weights = torch.Tensor(norm_weights)
 		
 		amalgam_dataset = amalgam_dataset.select([*feature_cols, "label"]).sample(
-			limit,
+			min(limit, len(amalgam_dataset)),
 			shuffle=True if shuffle_seed is not None else False,
 			seed=shuffle_seed,
 		)
@@ -145,7 +146,6 @@ class EventDataset(Dataset):
 		
 		self.features = features
 		self.features_shape = features_shape
-		self.blur_data = blur_data
 		self.blur_size = blur_size
 	
 	def __len__(self) -> int:
@@ -173,21 +173,27 @@ class EventDataset(Dataset):
 if __name__ == "__main__":
 	blur_size = 0.10
 	feature_cols = [
-		"blurred_muon_pair_inv_mass"
+		"blurred_pT_0", "blurred_muon_pair_inv_mass", "norm_weight"
 	]
 	data = EventDataset("background.csv",
 	                    "signal.csv",
 	                    feature_cols,
-	                    features_shape=(-1, 1),
+	                    features_shape=(-1, 3),
 	                    limit=20_000,
-	                    blur_data=True,
 	                    blur_size=blur_size,
 	                    shuffle_seed=314)
 	
-	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True)
+	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
+	                                generator=torch.Generator().manual_seed(314))
 	
 	classes, label = data[list(sampler)]
 	label = label.reshape((-1))
 	
-	plt.hist([classes[label == 1].numpy().reshape(-1), classes[label == 0].numpy().reshape(-1)], bins=100)
+	figure, axis = plt.subplots(2)
+	
+	axis[0].hist2d(classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 0][..., 1].numpy().reshape(-1),
+	               bins=100)
+	axis[1].hist2d(classes[label == 1][..., 0].numpy().reshape(-1), classes[label == 1][..., 1].numpy().reshape(-1),
+	               bins=100)
+	
 	plt.show()

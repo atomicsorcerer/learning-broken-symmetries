@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, Subset, WeightedRandomSampler
 from torcheval.metrics import BinaryAUROC
 
 from matplotlib import pyplot as plt
@@ -11,32 +11,38 @@ from data.event_dataset import EventDataset
 
 blur_size = 0.10
 feature_cols = [
-	"px_0", "py_0", "pz_0", "energy_0",
-	"px_1", "py_1", "pz_1", "energy_1",
+	"blurred_px_0", "blurred_py_0", "pz_0", "blurred_energy_0", "blurred_px_1", "blurred_py_1", "pz_1",
+	"blurred_energy_1"
 ]
 data = EventDataset("../../data/background.csv",
                     "../../data/signal.csv",
                     feature_cols,
                     features_shape=(-1, 2, 4),
                     limit=20_000,
-                    blur_data=True,
                     blur_size=blur_size,
                     shuffle_seed=314)
 
 test_percent = 0.20
-training_data, test_data = random_split(data, [1 - test_percent, test_percent], torch.Generator().manual_seed(314))
+training_range = int(len(data) * (1 - test_percent))
+test_range = int(len(data) * test_percent)
+
+training_sampler = WeightedRandomSampler(data.norm_weights[0:training_range], training_range, replacement=True,
+                                         generator=torch.Generator().manual_seed(314))
+test_sampler = WeightedRandomSampler(data.norm_weights[training_range:], test_range, replacement=True,
+                                     generator=torch.Generator().manual_seed(314))
 
 batch_size = 128
 
-train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+train_dataloader = DataLoader(Subset(data, range(0, training_range)), batch_size=batch_size, sampler=training_sampler)
+test_dataloader = DataLoader(Subset(data, range(training_range, len(data))), batch_size=batch_size,
+                             sampler=test_sampler)
 
 general_classifier_preference = None
 model = LatentSpacePooledHybridClassifier(16,
-                                          [128, 128, 128],
-                                          [128, 128, 128],
-                                          [64, 64, 64, 64, 64],
-                                          [512, 256, 256, 128],
+                                          [128],
+                                          [128],
+                                          [64, 64],
+                                          [512, 256, 128],
                                           general_classifier_preference=general_classifier_preference)
 
 lr = 0.00001
