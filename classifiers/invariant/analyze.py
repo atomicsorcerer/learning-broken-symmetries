@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import random_split
+from torch.utils.data import random_split, WeightedRandomSampler
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -8,28 +8,23 @@ import polars as pl
 from data import EventDataset
 
 blur_size = 0.10
-feature_cols = ["px_0", "py_0", "pz_0", "energy_0", "px_1", "py_1", "pz_1", "energy_1"]
+feature_cols = [
+	"blurred_px_0", "blurred_py_0", "pz_0", "blurred_energy_0", "blurred_px_1", "blurred_py_1", "pz_1",
+	"blurred_energy_1"
+]
 data = EventDataset("../../data/background.csv",
                     "../../data/signal.csv",
                     feature_cols,
                     features_shape=(-1, 2, 4),
                     limit=20_000,
-                    blur_data=True,
                     blur_size=blur_size,
                     shuffle_seed=314)
 
-test_percent = 0.20
-_, test_data = random_split(data, [1 - test_percent, test_percent], torch.Generator().manual_seed(314))
-data = list(test_data)
-
-X = []
-Y = []
-for x in test_data:
-	X.append(x[0].tolist())
-	Y.append(x[1].item())
-
-X = torch.Tensor(X)
-Y = torch.Tensor(Y).unsqueeze(1)
+sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
+                                generator=torch.Generator().manual_seed(314))
+dataset = data[list(sampler)]
+X = dataset[0]
+Y = dataset[1].squeeze().unsqueeze(1)
 
 pfn_model = torch.load("model.pth")
 result = pfn_model(X)

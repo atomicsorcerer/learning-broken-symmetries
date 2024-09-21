@@ -23,10 +23,10 @@ sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
 dataset = data[list(sampler)][0]
 
 pfn_model = torch.load("model.pth")
-general_weight_result = pfn_model.weight_network(dataset)
 
-# plt.scatter(data[list(sampler)][0].numpy(), general_weight_result.detach().numpy())
-# plt.show()
+# Analysis of weight identification function
+
+general_weight_result = pfn_model.weight_network(dataset)
 
 pT_vs_gen_prop_log = pl.DataFrame({
 	"pT": list(dataset),
@@ -37,43 +37,26 @@ pT_vs_gen_prop_log = pl.DataFrame({
 })
 pT_vs_gen_prop_log.write_csv("weight_subnet_analysis.csv")
 
-exit()
-# print(test_data)
-
-X = []
-Y = []
-for x in test_data:
-	X.append(x[0].tolist())
-	Y.append(x[1].item())
-
-X = torch.Tensor(X)
-Y = torch.Tensor(Y).unsqueeze(1)
-
-pfn_model = torch.load("model.pth")
-
-# Analysis of weight identification function
-
-pT = torch.sqrt(torch.add(torch.pow(X[..., 0][..., 0], 2), torch.pow(X[..., 1][..., 0], 2))).unsqueeze(1)
-general_weight_result = pfn_model.weight_network(pT)[..., 0]
-pT = pT.squeeze(1)
-
-weight_coords = sorted(zip(pT.numpy(), general_weight_result.detach().numpy()), key=lambda x: x[0])
-
-plt.plot(list(map(lambda x: x[0], weight_coords)), list(map(lambda x: x[1], weight_coords)))
-plt.xlabel("pT")
-plt.ylabel("General classifier proportion")
-plt.title("Latent Space Pooled Hybrid Classifier - General classifier proportion vs. pT")
-plt.show()
-
-pT_vs_gen_prop_log = pl.DataFrame({
-	"pT": list(map(lambda x: x[0], weight_coords)),
-	"general classifier proportion": list(map(lambda x: x[1], weight_coords)),
-	"classifier": "Latent Space Pooled Hybrid Classifier",
-	"blur": blur_size
-})
-pT_vs_gen_prop_log.write_csv("weight_subnet_analysis.csv")
-
 # Analysis of the accuracy/confidence of the classifier vs. pT
+
+blur_size = 0.10
+feature_cols = [
+	"blurred_px_0", "blurred_py_0", "pz_0", "blurred_energy_0", "blurred_px_1", "blurred_py_1", "pz_1",
+	"blurred_energy_1"
+]
+data = EventDataset("../../data/background.csv",
+                    "../../data/signal.csv",
+                    feature_cols,
+                    features_shape=(-1, 2, 4),
+                    limit=20_000,
+                    blur_size=blur_size,
+                    shuffle_seed=314)
+
+sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
+                                generator=torch.Generator().manual_seed(314))
+dataset = data[list(sampler)]
+X = dataset[0]
+Y = dataset[1].squeeze().unsqueeze(1)
 
 result = pfn_model(X)
 result = torch.nn.functional.sigmoid(result)
@@ -87,6 +70,7 @@ muon_inv_mass = torch.sqrt((X[..., 3][..., 0] + X[..., 3][..., 1]) ** 2
                               + (X[..., 2][..., 0] + X[..., 2][..., 1]) ** 2))
 
 coords = sorted(zip(pT, acc, result, Y, muon_inv_mass), key=lambda x: x[0])
+
 plt.plot(list(map(lambda x: x[0], coords)), list(map(lambda x: x[1], coords)), marker="o", linestyle="", markersize=0.5)
 plt.xlabel("pT")
 plt.ylabel("Accuracy")
