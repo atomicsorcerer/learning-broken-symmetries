@@ -1,6 +1,27 @@
 from matplotlib import pyplot as plt
 import polars as pl
 
+general_log = pl.read_csv("classifiers/general/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
+invariant_log = pl.read_csv("classifiers/invariant/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
+hybrid_log = pl.read_csv("classifiers/hybrid/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
+
+figure = plt.figure()
+figure.set_size_inches(12, 8)
+
+plt.plot(general_log[0], general_log[1], label="PFN General Classifier")
+plt.plot(invariant_log[0], invariant_log[1], label="Invariant Classifier")
+plt.plot(hybrid_log[0], hybrid_log[1], label="Hybrid Classifier")
+
+plt.xlabel("Epoch")
+plt.ylabel("AUC")
+
+plt.title("AUC vs. epoch, blur = 10%")
+plt.legend(loc="lower right")
+plt.savefig('figures/auc vs epoch.pdf', dpi=600)
+plt.show()
+
+# Comparison of mass vs. output for different slices of pT
+
 general_output = pl.read_csv("classifiers/general/analysis.csv").select(["muon_inv_mass", "output", "pT"])
 invariant_output = pl.read_csv("classifiers/invariant/analysis.csv").select(["muon_inv_mass", "output", "pT"])
 hybrid_output = pl.read_csv("classifiers/hybrid/pT_vs_acc_analysis.csv").select(["muon_inv_mass", "output", "pT"])
