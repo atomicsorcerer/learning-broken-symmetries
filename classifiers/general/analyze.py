@@ -1,7 +1,6 @@
 import torch
-from torch.utils.data import random_split, WeightedRandomSampler
+from torch.utils.data import WeightedRandomSampler
 
-import numpy as np
 from matplotlib import pyplot as plt
 import polars as pl
 

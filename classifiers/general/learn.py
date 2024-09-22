@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, random_split, WeightedRandomSampler, Subset
+from torch.utils.data import DataLoader, WeightedRandomSampler, Subset
 from torcheval.metrics import BinaryAUROC
 
 from matplotlib import pyplot as plt

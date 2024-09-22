@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import random_split, WeightedRandomSampler, DataLoader, Subset
+from torch.utils.data import WeightedRandomSampler
 
 from matplotlib import pyplot as plt
 import polars as pl
@@ -27,6 +27,12 @@ pfn_model = torch.load("model.pth")
 # Analysis of weight identification function
 
 general_weight_result = pfn_model.weight_network(dataset)
+
+figure = plt.figure(1, figsize=(12, 8), dpi=600)
+figure.suptitle("Proportion of general subnet in hybrid classifier vs. pT")
+plt.scatter(list(dataset), list(general_weight_result[..., 0].detach().numpy()))
+figure.savefig("../../figures/general subnet proportion vs pT.pdf")
+plt.show()
 
 pT_vs_gen_prop_log = pl.DataFrame({
 	"pT": list(dataset),

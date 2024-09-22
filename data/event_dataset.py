@@ -15,7 +15,7 @@ class EventDataset(Dataset):
 			limit: int = 10_000,
 			shuffle_seed: int | None = None,
 			blur_size: float = 0.0,
-			n_bins=50
+			n_bins: int = 50
 	) -> None:
 		"""
 		Initializes an EventDataset for given CSV files of signal and background.
@@ -26,8 +26,6 @@ class EventDataset(Dataset):
 			limit: Optional limit on number of events to sample for the dataset.
 			shuffle_seed: Optional shuffle seed for reproducibility.
 		"""
-		if feature_cols is None:
-			feature_cols = ["px_0", "py_0", "pz_0", "energy_0", "px_1", "py_1", "pz_1", "energy_1"]
 		if shuffle_seed is None:
 			shuffle_seed = np.random.randint(0, 100)
 		
@@ -123,19 +121,22 @@ class EventDataset(Dataset):
 			(pl.col("signal_distro_weight") / (
 					pl.col("label") * pl.col("signal_distro_weight")
 					+ (1 - pl.col("label")) * pl.col("bg_distro_weight")))
-			.fill_nan(0.0)  # NaN values are caused when both background and signal have no events on the wanted range
+			.fill_nan(
+				0.0)  # NaN values are caused when both background and signal have no events on the wanted range
 			.replace(np.inf, 0.0)  # Infinite values indicate that the background event is outside the distribution
 			.alias("norm_weight")
-		).filter(pl.col("norm_weight") != 0.0)
+		)
+		
+		amalgam_dataset = amalgam_dataset.sample(
+			min(limit, len(amalgam_dataset)),
+			shuffle=True if (shuffle_seed is not None) else False,
+			seed=shuffle_seed,
+		)
 		
 		norm_weights = amalgam_dataset.get_column("norm_weight")
 		self.norm_weights = torch.Tensor(norm_weights)
 		
-		amalgam_dataset = amalgam_dataset.select([*feature_cols, "label"]).sample(
-			min(limit, len(amalgam_dataset)),
-			shuffle=True if shuffle_seed is not None else False,
-			seed=shuffle_seed,
-		)
+		amalgam_dataset = amalgam_dataset.select([*feature_cols, "label"])
 		
 		labels = amalgam_dataset.get_column("label").to_list()
 		labels = np.array(labels, dtype=np.float32)
@@ -173,27 +174,51 @@ class EventDataset(Dataset):
 if __name__ == "__main__":
 	blur_size = 0.10
 	feature_cols = [
-		"blurred_pT_0", "blurred_muon_pair_inv_mass", "norm_weight"
+		"blurred_muon_pair_inv_mass", "blurred_pT_0"
 	]
 	data = EventDataset("background.csv",
 	                    "signal.csv",
 	                    feature_cols,
-	                    features_shape=(-1, 3),
+	                    features_shape=(-1, 2),
 	                    limit=20_000,
 	                    blur_size=blur_size,
-	                    shuffle_seed=314)
+	                    shuffle_seed=314,
+	                    n_bins=200)
 	
 	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
 	                                generator=torch.Generator().manual_seed(314))
 	
 	classes, label = data[list(sampler)]
-	label = label.reshape((-1))
+	label = label.squeeze(0)
 	
-	figure, axis = plt.subplots(2)
+	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
+	figure.suptitle("Mass v. pT distributions for signal and background, before and after reweighting")
 	
-	axis[0].hist2d(classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 0][..., 1].numpy().reshape(-1),
-	               bins=100)
-	axis[1].hist2d(classes[label == 1][..., 0].numpy().reshape(-1), classes[label == 1][..., 1].numpy().reshape(-1),
-	               bins=100)
+	bins = 200
+	limit = [
+		[min(data.features[..., 0]), max(data.features[..., 0])],
+		[min(data.features[..., 1]), max(data.features[..., 1])]
+	]
+	axis[0][0].hist2d(data.features[data.labels == 1][..., 0].numpy().reshape(-1),
+	                  data.features[data.labels == 1][..., 1].numpy().reshape(-1),
+	                  bins=bins, range=limit)
+	axis[0][0].set_title("Signal distribution (original)")
 	
+	axis[0][1].hist2d(data.features[data.labels == 0][..., 0].numpy().reshape(-1),
+	                  data.features[data.labels == 0][..., 1].numpy().reshape(-1),
+	                  bins=bins, range=limit)
+	axis[0][1].set_title("Background distribution (original)")
+	
+	axis[1][0].hist2d(classes[label == 1][..., 0].numpy().reshape(-1), classes[label == 1][..., 1].numpy().reshape(-1),
+	                  bins=bins, range=limit)
+	axis[1][0].set_title("Signal distribution (w/ reweight)")
+	
+	axis[1][1].hist2d(classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 0][..., 1].numpy().reshape(-1),
+	                  bins=bins, range=limit)
+	axis[1][1].set_title("Background distribution (w/ reweight)")
+	
+	plt.axis((min(data.features[..., 0]), 250.0, min(data.features[..., 1]), 250.0))
+	
+	figure.set_size_inches(12, 8)
+	plt.savefig("../figures/mass vs pT distributions.pdf", dpi=600)
 	plt.show()
