@@ -29,8 +29,10 @@ pfn_model = torch.load("model.pth")
 general_weight_result = pfn_model.weight_network(dataset)
 
 figure = plt.figure(1, figsize=(12, 8), dpi=600)
-figure.suptitle("Proportion of general subnet in hybrid classifier vs. pT")
-plt.scatter(list(dataset), list(general_weight_result[..., 0].detach().numpy()))
+figure.suptitle("Proportion of general subnet used in hybrid classifier vs. pT")
+plt.scatter(list(dataset), list(general_weight_result[..., 0].detach().numpy()), color="tab:blue")
+plt.xlabel("pT")
+plt.ylabel("Proportion of general subnet used in hybrid classifier")
 figure.savefig("../../figures/general subnet proportion vs pT.pdf")
 plt.show()
 

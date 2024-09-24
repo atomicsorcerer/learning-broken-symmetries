@@ -1,6 +1,8 @@
 from matplotlib import pyplot as plt
 import polars as pl
 
+# AUC vs. epoch
+
 general_log = pl.read_csv("classifiers/general/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
 invariant_log = pl.read_csv("classifiers/invariant/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
 hybrid_log = pl.read_csv("classifiers/hybrid/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
@@ -8,9 +10,9 @@ hybrid_log = pl.read_csv("classifiers/hybrid/log.csv").select(["epoch", "auc"]).
 figure = plt.figure()
 figure.set_size_inches(12, 8)
 
-plt.plot(general_log[0], general_log[1], label="PFN General Classifier")
-plt.plot(invariant_log[0], invariant_log[1], label="Invariant Classifier")
-plt.plot(hybrid_log[0], hybrid_log[1], label="Hybrid Classifier")
+plt.plot(general_log[0], general_log[1], label="PFN General Classifier", color="tab:blue")
+plt.plot(invariant_log[0], invariant_log[1], label="Invariant Classifier", color="tab:orange")
+plt.plot(hybrid_log[0], hybrid_log[1], label="Hybrid Classifier", color="tab:green")
 
 plt.xlabel("Epoch")
 plt.ylabel("AUC")
@@ -28,7 +30,9 @@ hybrid_output = pl.read_csv("classifiers/hybrid/pT_vs_acc_analysis.csv").select(
 
 figure, axis = plt.subplots(3, 3, sharex=True, sharey=True)
 
-figure.suptitle("Comparison of mass vs. output for different slices of pT (blur=10%)")
+figure.suptitle("Comparison of mass vs. output for different slices of pT (blur = 10%)")
+figure.supxlabel("Mass")
+figure.supylabel("Model output + sigmoid")
 
 output_titles = ["General PFN Classifier", "Invariant Classifier", "Hybrid Classifier"]
 outputs = [general_output, invariant_output, hybrid_output]
