@@ -15,7 +15,7 @@ class EventDataset(Dataset):
 			limit: int = 10_000,
 			shuffle_seed: int | None = None,
 			blur_size: float = 0.0,
-			n_bins: int = 50
+			n_bins: int = 100
 	) -> None:
 		"""
 		Initializes an EventDataset for given CSV files of signal and background.
@@ -110,11 +110,11 @@ class EventDataset(Dataset):
 		x_axis, y_axis = x_axis[:-1], y_axis[:-1]
 		
 		mass_indices = np.searchsorted(x_axis, amalgam_dataset.get_column("blurred_muon_pair_inv_mass").to_numpy(),
-		                               side="left") - 1
-		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="left") - 1
+		                               side="right") - 1
+		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="right") - 1
 		amalgam_dataset = amalgam_dataset.with_columns([
-			pl.Series("signal_distro_weight", signal_distro[pT_indices, mass_indices]),
-			pl.Series("bg_distro_weight", bg_distro[pT_indices, mass_indices])
+			pl.Series("signal_distro_weight", signal_distro[mass_indices, pT_indices]),
+			pl.Series("bg_distro_weight", bg_distro[mass_indices, pT_indices])
 		])
 		
 		amalgam_dataset = amalgam_dataset.with_columns(
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 	                    limit=20_000,
 	                    blur_size=blur_size,
 	                    shuffle_seed=314,
-	                    n_bins=200)
+	                    n_bins=100)
 	
 	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
 	                                generator=torch.Generator().manual_seed(314))
@@ -192,9 +192,11 @@ if __name__ == "__main__":
 	label = label.squeeze(0)
 	
 	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
-	figure.suptitle("Mass v. pT distributions for signal and background, before and after reweighting")
+	figure.suptitle("Mass v. pT distributions for signal and background, before and after reweighting (blur = 10%)")
+	figure.supxlabel("Mass")
+	figure.supylabel("pT")
 	
-	bins = 200
+	bins = 100
 	limit = [
 		[min(data.features[..., 0]), max(data.features[..., 0])],
 		[min(data.features[..., 1]), max(data.features[..., 1])]
@@ -221,4 +223,16 @@ if __name__ == "__main__":
 	
 	figure.set_size_inches(12, 8)
 	plt.savefig("../figures/mass vs pT distributions.pdf", dpi=600)
+	plt.show()
+	
+	mass_distro = plt.figure(figsize=(12, 8), dpi=600)
+	
+	plt.hist([classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 1][..., 0].numpy().reshape(-1)],
+	         bins=100, color=["tab:blue", "tab:orange"],
+	         range=(50.0, max(classes[label == 0][..., 0].numpy().reshape(-1))))
+	plt.xlabel("Mass")
+	plt.ylabel("Entries")
+	plt.title("Mass distribution for signal and background with reweighting (blur = 10%)")
+	plt.savefig("../figures/mass distribution.pdf")
+	
 	plt.show()
