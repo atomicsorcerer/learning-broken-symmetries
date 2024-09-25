@@ -89,32 +89,24 @@ class EventDataset(Dataset):
 				- (pl.col("pz_0") + pl.col("pz_1")) ** 2
 			)).alias("blurred_muon_pair_inv_mass"))
 		
-		bg_distro, x_axis, y_axis = np.histogram2d(
-			amalgam_dataset.filter(
-				pl.col("label") == 0
-			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
+		bg_distro, x_axis = np.histogram(
 			amalgam_dataset.filter(
 				pl.col("label") == 0
 			).get_column("blurred_pT_0").to_numpy(), n_bins)
 		
-		signal_distro, _, _ = np.histogram2d(
+		signal_distro, _ = np.histogram(
 			amalgam_dataset.filter(
 				pl.col("label") == 1
-			).get_column("blurred_muon_pair_inv_mass").to_numpy(),
-			amalgam_dataset.filter(
-				pl.col("label") == 1
-			).get_column("blurred_pT_0").to_numpy(), n_bins, range=[
-				[min(x_axis), max(x_axis)], [min(y_axis), max(y_axis)]
-			])
+			).get_column("blurred_pT_0").to_numpy(), n_bins, range=(min(x_axis), max(x_axis))
+		)
 		
-		x_axis, y_axis = x_axis[:-1], y_axis[:-1]
+		x_axis = x_axis[:-1]
 		
-		mass_indices = np.searchsorted(x_axis, amalgam_dataset.get_column("blurred_muon_pair_inv_mass").to_numpy(),
-		                               side="right") - 1
-		pT_indices = np.searchsorted(y_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(), side="right") - 1
+		pT_indices = np.searchsorted(x_axis, amalgam_dataset.get_column("blurred_pT_0").to_numpy(),
+		                             side="right") - 1
 		amalgam_dataset = amalgam_dataset.with_columns([
-			pl.Series("signal_distro_weight", signal_distro[mass_indices, pT_indices]),
-			pl.Series("bg_distro_weight", bg_distro[mass_indices, pT_indices])
+			pl.Series("signal_distro_weight", signal_distro[pT_indices]),
+			pl.Series("bg_distro_weight", bg_distro[pT_indices])
 		])
 		
 		amalgam_dataset = amalgam_dataset.with_columns(
@@ -192,7 +184,8 @@ if __name__ == "__main__":
 	label = label.squeeze(0)
 	
 	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
-	figure.suptitle("Mass v. pT distributions for signal and background, before and after reweighting (blur = 10%)")
+	figure.suptitle(
+		f"Mass v. pT distributions for signal and background, before and after reweighting (blur = {blur_size * 100}%)")
 	figure.supxlabel("Mass")
 	figure.supylabel("pT")
 	
@@ -232,7 +225,7 @@ if __name__ == "__main__":
 	         range=(50.0, max(classes[label == 0][..., 0].numpy().reshape(-1))))
 	plt.xlabel("Mass")
 	plt.ylabel("Entries")
-	plt.title("Mass distribution for signal and background with reweighting (blur = 10%)")
+	plt.title(f"Mass distribution for signal and background with reweighting (blur = {blur_size * 100}%)")
 	plt.savefig("../figures/mass distribution.pdf")
 	
 	plt.show()
