@@ -175,7 +175,7 @@ if __name__ == "__main__":
 	                    limit=20_000,
 	                    blur_size=blur_size,
 	                    shuffle_seed=314,
-	                    n_bins=100)
+	                    n_bins=200)
 	
 	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
 	                                generator=torch.Generator().manual_seed(314))
@@ -189,33 +189,26 @@ if __name__ == "__main__":
 	figure.supxlabel("Mass")
 	figure.supylabel("pT")
 	
-	bins = 100
+	bins = 200
 	limit = [
-		[min(data.features[..., 0]), max(data.features[..., 0])],
-		[min(data.features[..., 1]), max(data.features[..., 1])]
+		float(min(data.features[..., 1])), float(max(data.features[..., 1]))
 	]
-	axis[0][0].hist2d(data.features[data.labels == 1][..., 0].numpy().reshape(-1),
-	                  data.features[data.labels == 1][..., 1].numpy().reshape(-1),
-	                  bins=bins, range=limit)
+	axis[0][0].hist(data.features[data.labels == 1][..., 1].numpy().reshape(-1), bins=bins, range=limit,
+	                color="tab:orange")
 	axis[0][0].set_title("Signal distribution (original)")
 	
-	axis[0][1].hist2d(data.features[data.labels == 0][..., 0].numpy().reshape(-1),
-	                  data.features[data.labels == 0][..., 1].numpy().reshape(-1),
-	                  bins=bins, range=limit)
+	axis[0][1].hist(data.features[data.labels == 0][..., 1].numpy().reshape(-1), bins=bins, range=limit,
+	                color="tab:blue")
 	axis[0][1].set_title("Background distribution (original)")
 	
-	axis[1][0].hist2d(classes[label == 1][..., 0].numpy().reshape(-1), classes[label == 1][..., 1].numpy().reshape(-1),
-	                  bins=bins, range=limit)
+	axis[1][0].hist(classes[label == 1][..., 1].numpy().reshape(-1), bins=bins, range=limit, color="tab:orange")
 	axis[1][0].set_title("Signal distribution (w/ reweight)")
 	
-	axis[1][1].hist2d(classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 0][..., 1].numpy().reshape(-1),
-	                  bins=bins, range=limit)
+	axis[1][1].hist(classes[label == 0][..., 1].numpy().reshape(-1), bins=bins, range=limit, color="tab:blue")
 	axis[1][1].set_title("Background distribution (w/ reweight)")
 	
-	plt.axis((min(data.features[..., 0]), 250.0, min(data.features[..., 1]), 250.0))
-	
 	figure.set_size_inches(12, 8)
-	plt.savefig("../figures/mass vs pT distributions.pdf", dpi=600)
+	plt.savefig("../figures/pT distributions.pdf", dpi=600)
 	plt.show()
 	
 	mass_distro = plt.figure(figsize=(12, 8), dpi=600)
