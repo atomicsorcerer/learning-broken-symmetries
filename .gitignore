@@ -166,3 +166,6 @@ cython_debug/
 #.idea/
 
 classifiers/*/log.csv
+!/Reweighting 2.pdf
+
+!/Updated plots with reweighting.pdf

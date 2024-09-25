@@ -17,20 +17,20 @@ plt.plot(hybrid_log[0], hybrid_log[1], label="Hybrid Classifier", color="tab:gre
 plt.xlabel("Epoch")
 plt.ylabel("AUC")
 
-plt.title("AUC vs. epoch, blur = 10%")
+plt.title("AUC vs. epoch (blur = 10.0%)")
 plt.legend(loc="lower right")
 plt.savefig('figures/auc vs epoch.pdf', dpi=600)
 plt.show()
 
-# Comparison of mass vs. output for different slices of pT
+# Comparison of mass vs. output for different slices of pT (each slice is shown together)
 
 general_output = pl.read_csv("classifiers/general/analysis.csv").select(["muon_inv_mass", "output", "pT"])
 invariant_output = pl.read_csv("classifiers/invariant/analysis.csv").select(["muon_inv_mass", "output", "pT"])
 hybrid_output = pl.read_csv("classifiers/hybrid/pT_vs_acc_analysis.csv").select(["muon_inv_mass", "output", "pT"])
 
-figure, axis = plt.subplots(3, 3, sharex=True, sharey=True)
+figure, axis = plt.subplots(1, 3, sharex=True, sharey=True)
 
-figure.suptitle("Comparison of mass vs. output for different slices of pT (blur = 10%)")
+figure.suptitle("Comparison of mass vs. output for different slices of pT (blur = 10.0%)")
 figure.supxlabel("Mass")
 figure.supylabel("Model output + sigmoid")
 
@@ -38,6 +38,33 @@ output_titles = ["General PFN Classifier", "Invariant Classifier", "Hybrid Class
 outputs = [general_output, invariant_output, hybrid_output]
 colors = ["tab:blue", "tab:orange", "tab:green"]
 intervals = [0, 30, 40, 300]
+
+plt.rcParams["legend.markerscale"] = 10
+
+for i in range(3):
+	for j in range(3):
+		axis[i].scatter(
+			outputs[i].filter(pl.col("pT").is_between(intervals[j], intervals[j + 1])).to_numpy()[..., 0],
+			outputs[i].filter(pl.col("pT").is_between(intervals[j], intervals[j + 1])).to_numpy()[..., 1],
+			label=f"{intervals[j]} < pT < {intervals[j + 1]}", color=colors[j], alpha=0.2, s=0.3)
+	
+	axis[i].set_title(output_titles[i])
+	axis[i].legend(loc="upper right")
+	axis[i].set_xlim((0.0, 200.0))
+	axis[i].set_ylim((0.0, 1.0))
+
+figure.set_size_inches(12, 8)
+plt.savefig("figures/mass vs output (pT slices together).pdf", dpi=600)
+plt.show()
+
+# Comparison of mass vs. output for different slices of pT (each slice is shown separately)
+
+figure, axis = plt.subplots(3, 3, sharex=True, sharey=True)
+
+figure.suptitle("Comparison of mass vs. output for different slices of pT (blur = 10.0%)")
+figure.supxlabel("Mass")
+figure.supylabel("Model output + sigmoid")
+
 for i in range(3):
 	for j in range(3):
 		axis[i, j].scatter(
@@ -47,5 +74,5 @@ for i in range(3):
 		axis[i, j].set_title(f"{output_titles[j]} ({intervals[i]} < pT < {intervals[i + 1]})")
 
 figure.set_size_inches(12, 8)
-plt.savefig('figures/mass vs output.pdf', dpi=600)
+plt.savefig("figures/mass vs output (pT slices separate).pdf", dpi=600)
 plt.show()
