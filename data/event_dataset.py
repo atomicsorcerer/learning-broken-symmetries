@@ -175,7 +175,7 @@ if __name__ == "__main__":
 	                    limit=20_000,
 	                    blur_size=blur_size,
 	                    shuffle_seed=314,
-	                    n_bins=200)
+	                    n_bins=100)
 	
 	sampler = WeightedRandomSampler(data.norm_weights, len(data), replacement=True,
 	                                generator=torch.Generator().manual_seed(314))
@@ -183,13 +183,38 @@ if __name__ == "__main__":
 	classes, label = data[list(sampler)]
 	label = label.squeeze(0)
 	
+	# Mass for different slices of pT
+	
+	figure, axis = plt.subplots(3, sharex=True, sharey=True)
+	figure.suptitle(f"Signal muon pair invariant mass for different slices of pT (blur = {blur_size * 100}%)")
+	figure.supxlabel("Mass")
+	figure.supylabel("Entries")
+	
+	limit = (0.0, max(classes[label == 0][..., 0].numpy().reshape(-1)))
+	axis[0].hist(classes[(classes[..., 1] < 30) & (label == 1)][..., 0], bins=100, range=limit)
+	axis[0].set_title("pT < 30")
+	
+	axis[1].hist(classes[(30 < classes[..., 1]) & (classes[..., 1] < 40) & (label == 1)][..., 0], bins=100, range=limit)
+	axis[1].set_title("30 < pT < 40")
+	
+	axis[2].hist(classes[(classes[..., 1] > 40) & (label == 1)][..., 0], bins=100, range=limit)
+	axis[2].set_title("pT > 40")
+	
+	figure.set_size_inches(12, 8)
+	plt.savefig("../figures/signal mass distribution (pT slices).pdf")
+	plt.show()
+	
+	exit()
+	
+	# pT distribution before and after reweighting
+	
 	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
 	figure.suptitle(
-		f"Mass v. pT distributions for signal and background, before and after reweighting (blur = {blur_size * 100}%)")
-	figure.supxlabel("Mass")
-	figure.supylabel("pT")
+		f"pT distributions for signal and background, before and after reweighting (blur = {blur_size * 100}%)")
+	figure.supxlabel("pT")
+	figure.supylabel("Entries")
 	
-	bins = 200
+	bins = 100
 	limit = [
 		float(min(data.features[..., 1])), float(max(data.features[..., 1]))
 	]
@@ -202,23 +227,38 @@ if __name__ == "__main__":
 	axis[0][1].set_title("Background distribution (original)")
 	
 	axis[1][0].hist(classes[label == 1][..., 1].numpy().reshape(-1), bins=bins, range=limit, color="tab:orange")
-	axis[1][0].set_title("Signal distribution (w/ reweight)")
+	axis[1][0].set_title("Signal distribution (with reweight)")
 	
 	axis[1][1].hist(classes[label == 0][..., 1].numpy().reshape(-1), bins=bins, range=limit, color="tab:blue")
-	axis[1][1].set_title("Background distribution (w/ reweight)")
+	axis[1][1].set_title("Background distribution (with reweight)")
 	
 	figure.set_size_inches(12, 8)
 	plt.savefig("../figures/pT distributions.pdf", dpi=600)
 	plt.show()
 	
-	mass_distro = plt.figure(figsize=(12, 8), dpi=600)
+	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
+	figure.suptitle(
+		f"Mass distributions for signal and background, before and after reweighting (blur = {blur_size * 100}%)")
+	figure.supxlabel("Mass")
+	figure.supylabel("Entries")
 	
-	plt.hist([classes[label == 0][..., 0].numpy().reshape(-1), classes[label == 1][..., 0].numpy().reshape(-1)],
-	         bins=100, color=["tab:blue", "tab:orange"],
-	         range=(50.0, max(classes[label == 0][..., 0].numpy().reshape(-1))))
-	plt.xlabel("Mass")
-	plt.ylabel("Entries")
-	plt.title(f"Mass distribution for signal and background with reweighting (blur = {blur_size * 100}%)")
-	plt.savefig("../figures/mass distribution.pdf")
+	limit = [
+		float(min(data.features[..., 0])), float(max(data.features[..., 0]))
+	]
+	axis[0][0].hist(data.features[data.labels == 1][..., 0].numpy().reshape(-1), bins=bins, range=limit,
+	                color="tab:orange")
+	axis[0][0].set_title("Signal distribution (original)")
 	
+	axis[0][1].hist(data.features[data.labels == 0][..., 0].numpy().reshape(-1), bins=bins, range=limit,
+	                color="tab:blue")
+	axis[0][1].set_title("Background distribution (original)")
+	
+	axis[1][0].hist(classes[label == 1][..., 0].numpy().reshape(-1), bins=bins, range=limit, color="tab:orange")
+	axis[1][0].set_title("Signal distribution (with reweight)")
+	
+	axis[1][1].hist(classes[label == 0][..., 0].numpy().reshape(-1), bins=bins, range=limit, color="tab:blue")
+	axis[1][1].set_title("Background distribution (with reweight)")
+	
+	figure.set_size_inches(12, 8)
+	plt.savefig("../figures/mass distributions.pdf", dpi=600)
 	plt.show()

@@ -38,7 +38,7 @@ test_dataloader = DataLoader(Subset(data, range(training_range, len(data))), bat
 model = ParticleFlowNetwork(4,
                             8,
                             16,
-                            [512, 256, 256, 128],
+                            [512, 256, 128],
                             [128])
 
 lr = 0.00001
