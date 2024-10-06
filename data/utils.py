@@ -102,17 +102,28 @@ def compute_max_potential_accuracy(signal: np.array, background: np.array, bins:
 
 
 if __name__ == "__main__":
+	import itertools
 	import matplotlib.pyplot as plt
 	
-	background_data = convert_from_lhe(
-		"amm_forsym_test_8263464-5_unweighted_events.lhe"
-	)
+	background_data = list(itertools.chain.from_iterable(map(lambda x: convert_from_lhe(x), [
+		"background (raw)/amm_forsym_test_8263465-1_unweighted_events.lhe",
+		"background (raw)/amm_forsym_test_8263466-2_unweighted_events.lhe",
+		"background (raw)/amm_forsym_test_8263467-3_unweighted_events.lhe",
+		"background (raw)/amm_forsym_test_8263468-4_unweighted_events.lhe",
+		"background (raw)/amm_forsym_test_8263464-5_unweighted_events.lhe",
+	])))
 	csv_background_data = pl.DataFrame(background_data)
 	csv_background_data.write_csv("background.csv")
 	
 	print("Saved background.csv")
 	
-	signal_data = convert_from_lhe("zmm_forsym_test_8263460-1_unweighted_events.lhe")
+	signal_data = list(itertools.chain.from_iterable(map(lambda x: convert_from_lhe(x), [
+		"signal (raw)/zmm_forsym_test_8263460-1_unweighted_events.lhe",
+		"signal (raw)/zmm_forsym_test_8263461-2_unweighted_events.lhe",
+		"signal (raw)/zmm_forsym_test_8263462-3_unweighted_events.lhe",
+		"signal (raw)/zmm_forsym_test_8263463-4_unweighted_events.lhe",
+		"signal (raw)/zmm_forsym_test_8263459-5_unweighted_events.lhe",
+	])))
 	csv_signal_data = pl.DataFrame(signal_data)
 	csv_signal_data.write_csv("signal.csv")
 	

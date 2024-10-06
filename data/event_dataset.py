@@ -204,8 +204,6 @@ if __name__ == "__main__":
 	plt.savefig("../figures/signal mass distribution (pT slices).pdf")
 	plt.show()
 	
-	exit()
-	
 	# pT distribution before and after reweighting
 	
 	figure, axis = plt.subplots(2, 2, sharex=True, sharey=True)
