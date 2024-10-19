@@ -1,6 +1,32 @@
 from matplotlib import pyplot as plt
 import polars as pl
 
+# AUC vs. Dataset proportion
+
+general_db_prop_log = pl.read_csv("classifiers/general/auc_vs_db_size.csv").select(
+	["dataset_proportion", "final_auc"]).to_numpy().transpose()
+invariant_db_prop_log = pl.read_csv("classifiers/invariant/auc_vs_db_size.csv").select(
+	["dataset_proportion", "final_auc"]).to_numpy().transpose()
+hybrid_db_prop_log = pl.read_csv("classifiers/hybrid/auc_vs_db_size.csv").select(
+	["dataset_proportion", "final_auc"]).to_numpy().transpose()
+
+figure = plt.figure()
+figure.set_size_inches(12, 8)
+
+plt.plot(general_db_prop_log[0], general_db_prop_log[1], label="PFN General Classifier", color="tab:blue")
+plt.plot(invariant_db_prop_log[0], invariant_db_prop_log[1], label="Invariant Classifier", color="tab:orange")
+plt.plot(hybrid_db_prop_log[0], hybrid_db_prop_log[1], label="Hybrid Classifier", color="tab:green")
+
+plt.xlabel("Train set size (proportion)")
+plt.ylabel("AUC")
+
+plt.title("AUC vs. Train set size (proportion) (blur = 10.0%)")
+plt.legend(loc="lower right")
+plt.savefig('figures/auc vs train set proportion (x5 dataset).pdf', dpi=600)
+plt.show()
+
+exit()
+
 # AUC vs. epoch
 
 general_log = pl.read_csv("classifiers/general/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
@@ -19,7 +45,7 @@ plt.ylabel("AUC")
 
 plt.title("AUC vs. epoch (blur = 10.0%)")
 plt.legend(loc="lower right")
-plt.savefig('figures/auc vs epoch.pdf', dpi=600)
+plt.savefig('figures/auc vs epoch (x5 dataset).pdf', dpi=600)
 plt.show()
 
 # Comparison of mass vs. output for different slices of pT (each slice is shown together)
@@ -54,7 +80,7 @@ for i in range(3):
 	axis[i].set_ylim((0.0, 1.0))
 
 figure.set_size_inches(12, 8)
-plt.savefig("figures/mass vs output (pT slices together).pdf", dpi=600)
+plt.savefig("figures/mass vs output (pT slices together) (x5 dataset).pdf", dpi=600)
 plt.show()
 
 # Comparison of mass vs. output for different slices of pT (each slice is shown separately)
@@ -74,5 +100,5 @@ for i in range(3):
 		axis[i, j].set_title(f"{output_titles[j]} ({intervals[i]} < pT < {intervals[i + 1]})")
 
 figure.set_size_inches(12, 8)
-plt.savefig("figures/mass vs output (pT slices separate).pdf", dpi=600)
+plt.savefig("figures/mass vs output (pT slices separate) (x5 dataset).pdf", dpi=600)
 plt.show()

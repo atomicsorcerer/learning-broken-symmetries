@@ -10,6 +10,7 @@ from models import *
 from data.event_dataset import EventDataset
 
 blur_size = 0.10
+db_size = 100_000
 feature_cols = [
 	"blurred_px_0", "blurred_py_0", "pz_0", "blurred_energy_0", "blurred_px_1", "blurred_py_1", "pz_1",
 	"blurred_energy_1"
@@ -18,7 +19,7 @@ data = EventDataset("../../data/background.csv",
                     "../../data/signal.csv",
                     feature_cols,
                     features_shape=(-1, 2, 4),
-                    limit=20_000,
+                    limit=db_size,
                     blur_size=blur_size,
                     shuffle_seed=314)
 
@@ -92,7 +93,8 @@ log = pl.DataFrame({
 	"lr": lr,
 	"weight_decay": weight_decay,
 	"blur_size": blur_size,
-	"general_classifier_preference": general_classifier_preference
+	"general_classifier_preference": general_classifier_preference,
+	"db_size": db_size
 })
 log.write_csv("log.csv")
 print("Saved log.csv")
