@@ -1,3 +1,5 @@
+import time
+
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler, Subset
 from torcheval.metrics import BinaryAUROC
@@ -40,7 +42,7 @@ model = ParticleFlowNetwork(4,
                             8,
                             16,
                             [512, 256, 128],
-                            [128])
+                            [128, 128])
 
 lr = 0.00001
 weight_decay = 0.01
@@ -91,5 +93,6 @@ log = pl.DataFrame({
 	"blur_size": blur_size,
 	"db_size": db_size
 })
-log.write_csv("log.csv")
-print("Saved log.csv")
+file_name = f"log_{round(time.time())}.csv"
+log.write_csv("training logs/" + file_name)
+print(f"Saved {file_name}")

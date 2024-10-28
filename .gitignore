@@ -165,7 +165,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-classifiers/*/log.csv
+classifiers/invariant/training logs/log.csv
 !/Reweighting 2.pdf
 
 !/Updated plots with reweighting.pdf

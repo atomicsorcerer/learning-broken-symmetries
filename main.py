@@ -3,35 +3,52 @@ import polars as pl
 
 # AUC vs. Dataset proportion
 
-general_db_prop_log = pl.read_csv("classifiers/general/auc_vs_db_size.csv").select(
-	["dataset_proportion", "final_auc"]).to_numpy().transpose()
-invariant_db_prop_log = pl.read_csv("classifiers/invariant/auc_vs_db_size.csv").select(
-	["dataset_proportion", "final_auc"]).to_numpy().transpose()
-hybrid_db_prop_log = pl.read_csv("classifiers/hybrid/auc_vs_db_size.csv").select(
-	["dataset_proportion", "final_auc"]).to_numpy().transpose()
+n_ensembles = 2
+
+general_db_prop_log = pl.read_csv("classifiers/general/bulk training logs/auc_vs_db_size_*.csv").select(
+	["final_auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+invariant_db_prop_log = pl.read_csv("classifiers/invariant/bulk training logs/auc_vs_db_size_*").select(
+	["final_auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+hybrid_db_prop_log = pl.read_csv("classifiers/hybrid/bulk training logs/auc_vs_db_size_*").select(
+	["final_auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+
+x_axis = [i / 10 for i in range(1, 11)]
 
 figure = plt.figure()
 figure.set_size_inches(12, 8)
 
-plt.plot(general_db_prop_log[0], general_db_prop_log[1], label="PFN General Classifier", color="tab:blue")
-plt.plot(invariant_db_prop_log[0], invariant_db_prop_log[1], label="Invariant Classifier", color="tab:orange")
-plt.plot(hybrid_db_prop_log[0], hybrid_db_prop_log[1], label="Hybrid Classifier", color="tab:green")
+plt.fill_between(x_axis, general_db_prop_log.mean(axis=1) + general_db_prop_log.std(axis=1),
+                 general_db_prop_log.mean(axis=1) - general_db_prop_log.std(axis=1), general_db_prop_log.max(axis=1),
+                 color="tab:blue", alpha=0.1)
+
+plt.fill_between(x_axis, invariant_db_prop_log.mean(axis=1) + invariant_db_prop_log.std(axis=1),
+                 invariant_db_prop_log.mean(axis=1) - invariant_db_prop_log.std(axis=1), color="tab:orange",
+                 alpha=0.1)
+
+plt.fill_between(x_axis, hybrid_db_prop_log.mean(axis=1) + hybrid_db_prop_log.std(axis=1),
+                 hybrid_db_prop_log.mean(axis=1) - hybrid_db_prop_log.std(axis=1), color="tab:green",
+                 alpha=0.1)
+
+plt.plot(x_axis, general_db_prop_log.mean(axis=1), label="PFN General Classifier", color="tab:blue")
+plt.plot(x_axis, invariant_db_prop_log.mean(axis=1), label="Invariant Classifier", color="tab:orange")
+plt.plot(x_axis, hybrid_db_prop_log.mean(axis=1), label="Hybrid Classifier", color="tab:green")
 
 plt.xlabel("Train set size (proportion)")
 plt.ylabel("AUC")
 
-plt.title("AUC vs. Train set size (proportion) (blur = 10.0%)")
+plt.title("Mean AUC vs. Train set size (proportion) (blur = 10.0%)")
 plt.legend(loc="lower right")
-plt.savefig('figures/auc vs train set proportion (x5 dataset).pdf', dpi=600)
+plt.savefig('figures/mean auc vs train set proportion (x5 dataset).pdf', dpi=600)
 plt.show()
 
 exit()
 
 # AUC vs. epoch
 
-general_log = pl.read_csv("classifiers/general/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
-invariant_log = pl.read_csv("classifiers/invariant/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
-hybrid_log = pl.read_csv("classifiers/hybrid/log.csv").select(["epoch", "auc"]).to_numpy().transpose()
+general_log = pl.read_csv("classifiers/general/training logs/log_*.csv").select(["epoch", "auc"]).to_numpy().transpose()
+invariant_log = pl.read_csv("classifiers/invariant/training logs/log_*.csv").select(
+	["epoch", "auc"]).to_numpy().transpose()
+hybrid_log = pl.read_csv("classifiers/hybrid/training logs/log_*.csv").select(["epoch", "auc"]).to_numpy().transpose()
 
 figure = plt.figure()
 figure.set_size_inches(12, 8)

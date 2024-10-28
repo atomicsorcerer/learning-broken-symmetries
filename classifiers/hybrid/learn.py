@@ -1,12 +1,14 @@
+import time
+
 import torch
-from torch.utils.data import DataLoader, random_split, Subset, WeightedRandomSampler
+from torch.utils.data import DataLoader, WeightedRandomSampler, Subset
 from torcheval.metrics import BinaryAUROC
 
 from matplotlib import pyplot as plt
 import polars as pl
 
 from classifiers.utils import train, test
-from models import *
+from models import LatentSpacePooledHybridClassifier
 from data.event_dataset import EventDataset
 
 blur_size = 0.10
@@ -40,8 +42,8 @@ test_dataloader = DataLoader(Subset(data, range(training_range, len(data))), bat
 
 general_classifier_preference = None
 model = LatentSpacePooledHybridClassifier(16,
-                                          [128],
-                                          [128],
+                                          [64],
+                                          [64],
                                           [64, 64],
                                           [512, 256, 128],
                                           general_classifier_preference=general_classifier_preference)
@@ -96,5 +98,6 @@ log = pl.DataFrame({
 	"general_classifier_preference": general_classifier_preference,
 	"db_size": db_size
 })
-log.write_csv("log.csv")
-print("Saved log.csv")
+file_name = f"log_{round(time.time())}.csv"
+log.write_csv("training logs/" + file_name)
+print(f"Saved {file_name}")
