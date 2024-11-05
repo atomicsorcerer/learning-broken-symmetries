@@ -24,17 +24,25 @@ dataset = data[list(sampler)][0]
 
 pfn_model = torch.load("model.pth")
 
+plt.rcParams.update({'font.size': 24})
+plt.rcParams.update({'lines.linewidth': 1.5})
+plt.rcParams.update({'text.usetex': True})
+plt.rcParams.update({'font.family': "serif"})
+plt.rcParams.update({'font.serif': "Computer Modern Serif"})
+
 # Analysis of weight identification function
 
 general_weight_result = pfn_model.weight_network(dataset)
 
 figure = plt.figure(1, figsize=(12, 8), dpi=600)
-figure.suptitle("Proportion of general subnet used in hybrid classifier vs. pT")
+# figure.suptitle("Proportion of general subnet used in hybrid classifier vs. pT")
 plt.scatter(list(dataset), list(general_weight_result[..., 0].detach().numpy()), color="tab:blue")
-plt.xlabel("pT")
-plt.ylabel("Proportion of general subnet used in hybrid classifier")
+plt.xlabel("$p_T$")
+plt.ylabel("General subnet weight")
 figure.savefig("../../figures/general subnet proportion vs pT.pdf")
 plt.show()
+
+exit()
 
 pT_vs_gen_prop_log = pl.DataFrame({
 	"pT": list(dataset),
