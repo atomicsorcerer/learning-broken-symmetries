@@ -7,9 +7,51 @@ plt.rcParams.update({'text.usetex': True})
 plt.rcParams.update({'font.family': "serif"})
 plt.rcParams.update({'font.serif': "Computer Modern Serif"})
 
+# AUC vs. epoch
+
+n_ensembles = 5
+
+general_log = pl.read_csv("classifiers/general/training logs/log_*.csv").select(
+	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+invariant_log = pl.read_csv("classifiers/invariant/training logs/log_*.csv").select(
+	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+hybrid_log = pl.read_csv("classifiers/hybrid/training logs/log_*.csv").select(
+	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
+
+x_axis = [i for i in range(1, 101)]
+
+figure = plt.figure()
+figure.set_size_inches(12, 8)
+
+plt.fill_between(x_axis, general_log.mean(axis=1) + general_log.std(axis=1),
+                 general_log.mean(axis=1) - general_log.std(axis=1),
+                 color="black", alpha=0.1)
+
+plt.fill_between(x_axis, invariant_log.mean(axis=1) + invariant_log.std(axis=1),
+                 invariant_log.mean(axis=1) - invariant_log.std(axis=1), color="tab:blue",
+                 alpha=0.1)
+
+plt.fill_between(x_axis, hybrid_log.mean(axis=1) + hybrid_log.std(axis=1),
+                 hybrid_log.mean(axis=1) - hybrid_log.std(axis=1), color="tab:red",
+                 alpha=0.1)
+
+plt.plot(x_axis, general_log.mean(axis=1), label="PFN General Classifier", color="black")
+plt.plot(x_axis, invariant_log.mean(axis=1), label="Invariant Classifier", color="tab:blue")
+plt.plot(x_axis, hybrid_log.mean(axis=1), label="Hybrid Classifier", color="tab:red")
+
+plt.xlabel("Epoch")
+plt.ylabel("AUC")
+
+# plt.title("AUC vs. epoch (blur = 10.0%)")
+plt.legend(loc="lower right")
+plt.savefig('figures/auc vs epoch_small.pdf', dpi=600)
+plt.show()
+
+exit()
+
 # AUC vs. Dataset proportion
 
-n_ensembles = 4
+n_ensembles = 5
 
 general_db_prop_log = pl.read_csv("classifiers/general/bulk training logs/auc_vs_db_size_*.csv").select(
 	["final_auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
@@ -45,46 +87,6 @@ plt.ylabel("AUC")
 # plt.title("AUC vs. Train set size (proportion) (blur = 10.0%)")
 plt.legend(loc="lower right")
 plt.savefig('figures/mean auc vs train set proportion (x5 dataset).pdf', dpi=600)
-plt.show()
-
-# AUC vs. epoch
-
-n_ensembles = 2
-
-general_log = pl.read_csv("classifiers/general/training logs/log_*.csv").select(
-	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
-invariant_log = pl.read_csv("classifiers/invariant/training logs/log_*.csv").select(
-	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
-hybrid_log = pl.read_csv("classifiers/hybrid/training logs/log_*.csv").select(
-	["auc"]).to_numpy().reshape(n_ensembles, -1).transpose()
-
-x_axis = [i for i in range(1, 101)]
-
-figure = plt.figure()
-figure.set_size_inches(12, 8)
-
-plt.fill_between(x_axis, general_log.mean(axis=1) + general_log.std(axis=1),
-                 general_log.mean(axis=1) - general_log.std(axis=1),
-                 color="tab:blue", alpha=0.1)
-
-plt.fill_between(x_axis, invariant_log.mean(axis=1) + invariant_log.std(axis=1),
-                 invariant_log.mean(axis=1) - invariant_log.std(axis=1), color="tab:orange",
-                 alpha=0.1)
-
-plt.fill_between(x_axis, hybrid_log.mean(axis=1) + hybrid_log.std(axis=1),
-                 hybrid_log.mean(axis=1) - hybrid_log.std(axis=1), color="tab:green",
-                 alpha=0.1)
-
-plt.plot(x_axis, general_log.mean(axis=1), label="PFN General Classifier", color="tab:blue")
-plt.plot(x_axis, invariant_log.mean(axis=1), label="Invariant Classifier", color="tab:orange")
-plt.plot(x_axis, hybrid_log.mean(axis=1), label="Hybrid Classifier", color="tab:green")
-
-plt.xlabel("Epoch")
-plt.ylabel("AUC")
-
-plt.title("AUC vs. epoch (blur = 10.0%)")
-plt.legend(loc="lower right")
-plt.savefig('figures/auc vs epoch (x5 dataset).pdf', dpi=600)
 plt.show()
 
 # Comparison of mass vs. output for different slices of pT (each slice is shown together)

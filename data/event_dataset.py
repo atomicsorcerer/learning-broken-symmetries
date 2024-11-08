@@ -164,7 +164,7 @@ class EventDataset(Dataset):
 
 
 if __name__ == "__main__":
-	blur_size = 0.0
+	blur_size = 0.10
 	feature_cols = [
 		"blurred_muon_pair_inv_mass", "blurred_pT_0"
 	]
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 	                    "signal.csv",
 	                    feature_cols,
 	                    features_shape=(-1, 2),
-	                    limit=20_000,
+	                    limit=100_000,
 	                    blur_size=blur_size,
 	                    shuffle_seed=314,
 	                    n_bins=100)
@@ -194,7 +194,7 @@ if __name__ == "__main__":
 	figure = plt.figure()
 	figure.set_size_inches(12, 8)
 	# figure.suptitle(f"Signal muon pair invariant mass for different slices of pT (blur = {blur_size * 100}%)")
-	figure.supxlabel("Reconstructed Z boson mass [GeV]")
+	figure.supxlabel(f"{'True Z boson mass [GeV]' if blur_size == 0 else 'Smeared Z boson mass [GeV]'}")
 	figure.supylabel("Entries")
 	
 	plt.hist([classes[(classes[..., 1] < 30) & (label == 1)][..., 0],
@@ -202,12 +202,14 @@ if __name__ == "__main__":
 	          classes[(classes[..., 1] > 40) & (label == 1)][..., 0]], bins=200, range=(0, 200), histtype="step",
 	         label=["$p_T < 30$", "$30 < p_T < 40$", "$p_T > 40$"], color=["tab:red", "black", "tab:blue"])
 	
-	plt.xlim([50, 150])
+	plt.xlim([70, 120])
 	plt.legend(loc="upper right")
 	
 	figure.set_size_inches(12, 8)
 	plt.savefig(f"../figures/signal mass distribution{'_blur' if blur_size > 0 else ''}.pdf")
 	plt.show()
+	
+	exit()
 	
 	# pT distribution before and after reweighting
 	
@@ -215,7 +217,7 @@ if __name__ == "__main__":
 	figure.set_size_inches(12, 8)
 	# figure.suptitle(
 	# 	f"pT distributions for signal and background, before and after reweighting (blur = {blur_size * 100}%)")
-	figure.supxlabel("$p_T$")
+	figure.supxlabel("Transverse momentum $p_T$")
 	figure.supylabel("Entries")
 	
 	bins = 100
@@ -223,21 +225,19 @@ if __name__ == "__main__":
 		float(min(data.features[..., 1])), float(max(data.features[..., 1]))
 	)
 	plt.hist(data.features[data.labels == 1][..., 1].numpy().reshape(-1), bins=bins, range=limit, histtype="step",
-	         color="tab:red", label="Signal distribution (original)", linestyle="solid")
+	         color="tab:red", label="Signal", linestyle="solid")
 	plt.hist(data.features[data.labels == 0][..., 1].numpy().reshape(-1), bins=bins, range=limit, histtype="step",
-	         color="black", label="Background distribution (original)", linestyle="solid")
+	         color="black", label="Background", linestyle="solid")
 	plt.hist(classes[label == 1][..., 1].numpy().reshape(-1), bins=bins, range=limit, histtype="step",
-	         color="tab:red", label="Signal distribution (with reweight)", linestyle="dashed")
+	         color="tab:red", label="Signal (reweighted)", linestyle="dashed")
 	plt.hist(classes[label == 0][..., 1].numpy().reshape(-1), bins=bins, range=limit, histtype="step",
-	         color="black", label="Background distribution (with reweight)", linestyle="dashed")
+	         color="black", label="Background (reweighted)", linestyle="dashed")
 	
-	plt.xlim([0, 200])
+	plt.xlim([0, 125])
 	plt.legend(loc="upper right")
 	figure.set_size_inches(12, 8)
 	plt.savefig("../figures/pT distributions.pdf", dpi=600)
 	plt.show()
-	
-	exit()
 	
 	# Mass distribution before and after reweighting
 	

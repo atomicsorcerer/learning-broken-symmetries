@@ -12,7 +12,7 @@ from models import ParticleFlowNetwork
 from data.event_dataset import EventDataset
 
 blur_size = 0.10
-db_size = 100_000
+db_size = 20_000
 feature_cols = [
 	"blurred_px_0", "blurred_py_0", "pz_0", "blurred_energy_0", "blurred_px_1", "blurred_py_1", "pz_1",
 	"blurred_energy_1"
