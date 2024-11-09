@@ -44,7 +44,7 @@ plt.ylabel("AUC")
 
 # plt.title("AUC vs. epoch (blur = 10.0%)")
 plt.legend(loc="lower right")
-plt.savefig('figures/auc vs epoch_small.pdf', dpi=600)
+plt.savefig('figures/auc vs epoch.pdf', dpi=600)
 plt.show()
 
 exit()
