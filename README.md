@@ -2,7 +2,7 @@
 
 **Seth Nabat, Aishik Ghosh, Edmund Witkowski, Gregor Kasieczka, Daniel Whiteson**
 
-https://arxiv.org/abs/2412.18773
+https://doi.org/10.1103/PhysRevD.111.072002
 
 **Abstract:** Recognizing symmetries in data allows for significant boosts in neural network training, which is
 especially important where training data are limited. In many cases, however, the exact underlying symmetry is present
